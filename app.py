@@ -14,4 +14,4 @@ if 'authenticated' not in st.session_state:
 if not st.session_state.authenticated:
     st.switch_page("pages/login.py")
 else:
-    st.switch_page("pages/1_📡_Realtime.py")
+    st.switch_page("pages/1_Realtime.py")

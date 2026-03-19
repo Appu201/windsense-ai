@@ -3,8 +3,6 @@ import streamlit as st
 import hashlib
 from datetime import datetime
 
-# User database — hardcoded for demo
-# In production this would live in the SQLite database
 USERS = {
     "admin": {
         "password_hash": hashlib.sha256("windsense2026".encode()).hexdigest(),
@@ -36,18 +34,21 @@ def verify_login(username, password):
             return True, USERS[username]
     return False, None
 
-# Page config
 st.set_page_config(
     page_title="WindSense AI — Login",
     page_icon="🌀",
     layout="centered"
 )
 
+# Capture ack param and store in session state immediately
+ack_id = st.query_params.get('ack', '')
+if ack_id:
+    st.session_state['pending_ack'] = ack_id
+
 # Redirect if already logged in
 if st.session_state.get('authenticated', False):
-    st.switch_page("pages/1_📡_Realtime.py")
+    st.switch_page("pages/1_Realtime.py")
 
-# Styling
 st.markdown("""
 <style>
     .stApp { background-color: #0D1B2A; color: white; }
@@ -70,7 +71,6 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# Logo
 col1, col2, col3 = st.columns([1, 2, 1])
 with col2:
     st.image("https://img.icons8.com/fluency/150/wind-turbine.png", width=100)
@@ -81,7 +81,10 @@ st.markdown("<p style='text-align:center; color:#4FC3F7;'>Intelligent Predictive
 
 st.divider()
 
-# Login form
+pending_ack = st.session_state.get('pending_ack', '')
+if pending_ack:
+    st.info(f"🔔 You're acknowledging alarm **{pending_ack}**. Please log in to continue.")
+
 with st.form("login_form"):
     st.subheader("🔐 Sign In")
 
@@ -112,7 +115,7 @@ with st.form("login_form"):
                 st.balloons()
                 import time
                 time.sleep(1)
-                st.switch_page("pages/1_📡_Realtime.py")
+                st.switch_page("pages/1_Realtime.py")
             else:
                 st.error("❌ Invalid username or password.")
         else:
