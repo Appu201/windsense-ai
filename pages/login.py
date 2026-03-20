@@ -1,6 +1,8 @@
 # pages/login.py — WindSense AI Login Page
 import streamlit as st
 import hashlib
+import json
+import os
 from datetime import datetime
 
 USERS = {
@@ -111,6 +113,10 @@ with st.form("login_form"):
                 st.session_state.user_role = user_data['role']
                 st.session_state.user_email = user_data.get('email', '')
                 st.session_state.login_time = datetime.now().isoformat()
+
+                
+                st.session_state.acknowledged_alarms = {}
+
                 st.success(f"✅ Welcome, {user_data['name']}!")
                 st.balloons()
                 import time

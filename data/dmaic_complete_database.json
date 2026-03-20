@@ -1,0 +1,743 @@
+{
+  "Main Controller Fault": {
+    "define": {
+      "what": "Main controller (PLC/SCADA) experiences software fault, communication loss, or processing error causing turbine shutdown",
+      "when": "Can occur anytime, but 68% occur during grid instability events",
+      "impact": "Complete turbine shutdown until controller is reset or repaired. Average 11 hours of lost production per episode."
+    },
+    "measure": {
+      "frequency": "1,023 episodes over 9.9 years (103/year across 5 turbines)",
+      "duration": "11.1 hours average",
+      "lpf_impact": "5-7% of total LPF",
+      "target": "Less than 5 faults per turbine per year"
+    },
+    "analyze": {
+      "root_cause": "Controller software instability during grid frequency and voltage fluctuations",
+      "contributing": [
+        "Grid instability triggers controller protection mode",
+        "Long alarm durations suggest manual intervention required (not auto-reset)",
+        "Affects all turbines equally \u2014 systemic issue, not turbine-specific"
+      ]
+    },
+    "improve": {
+      "solutions": [
+        "Update controller firmware to latest stable version with better grid fault tolerance",
+        "Implement auto-reset logic after fault diagnosis to reduce duration from 11 hrs to 2 hrs",
+        "Install redundant controller for critical turbines to eliminate 90% of downtime",
+        "Deploy grid stability monitoring for early warning before controller fault occurs"
+      ],
+      "expected_benefit": "Software update reduces faults by 40%, auto-reset saves ~7,200 hours downtime. Combined LPF reduction: 3-4%"
+    },
+    "control": {
+      "monitoring": "Daily controller fault log review, weekly frequency trend analysis, monthly comparison to target",
+      "alerts": [
+        "CRITICAL: More than 2 controller faults in 24 hours \u2014 immediate investigation",
+        "HIGH: More than 10 faults in 1 month \u2014 schedule controller inspection",
+        "MEDIUM: Fault duration exceeds 24 hours \u2014 escalate to vendor"
+      ],
+      "review": "Weekly team meeting to discuss controller health, monthly report to management"
+    }
+  },
+  "Extended Grid Outage": {
+    "define": {
+      "what": "Prolonged loss of grid connection (more than 5 hours) preventing turbine from exporting power",
+      "when": "Typically during severe weather, grid maintenance, or grid infrastructure failures",
+      "impact": "Turbines cannot produce power even when wind is available. Total production loss during outage."
+    },
+    "measure": {
+      "frequency": "1,038 episodes over 9.9 years (105/year across 5 turbines)",
+      "duration": "10.4 hours average",
+      "lpf_impact": "5-6% of total LPF",
+      "target": "Less than 5 outages per turbine per year with average duration under 3 hours"
+    },
+    "analyze": {
+      "root_cause": "Regional grid instability from aging grid infrastructure and weather events",
+      "contributing": [
+        "Long durations suggest external grid issues beyond wind farm control",
+        "Affects all turbines simultaneously \u2014 grid-side problem, not turbine-side",
+        "Frequency increasing slightly over 9.9 year period suggesting grid aging"
+      ]
+    },
+    "improve": {
+      "solutions": [
+        "Establish direct communication protocol with grid operator for advance notice of planned outages",
+        "Install Battery Energy Storage System (BESS) to ride through short outages",
+        "Negotiate with grid operator for redundant connection point to reduce outage frequency by 80%",
+        "Use weather forecasting to predict high-risk outage periods and schedule maintenance accordingly"
+      ],
+      "expected_benefit": "Communication protocol reduces surprise outages by 30%, saves ~3,200 hours. Combined LPF reduction: 2-3%"
+    },
+    "control": {
+      "monitoring": "Real-time grid voltage and frequency monitoring dashboard, daily review of outage logs",
+      "alerts": [
+        "CRITICAL: Grid outage exceeds 2 hours \u2014 contact grid operator immediately",
+        "HIGH: More than 3 outages in 1 week \u2014 schedule meeting with grid operator",
+        "MEDIUM: Outage forecast based on weather \u2014 prepare emergency response team"
+      ],
+      "review": "Weekly internal team review, monthly meeting with grid operator, quarterly infrastructure upgrade business case"
+    }
+  },
+  "Grid Frequency Deviation": {
+    "define": {
+      "what": "Grid frequency deviates outside acceptable range (typically 50 Hz plus or minus 0.5 Hz), triggering turbine safety shutdown",
+      "when": "Occurs frequently (3,238 times over 9.9 years) but with short duration (37 min average)",
+      "impact": "Turbine disconnects from grid until frequency stabilizes, then auto-reconnects. Brief but very frequent production loss."
+    },
+    "measure": {
+      "frequency": "3,238 episodes over 9.9 years (327/year, highest frequency alarm)",
+      "duration": "0.62 hours average (37 minutes)",
+      "lpf_impact": "1-2% of total LPF",
+      "target": "Less than 20 events per turbine per year with auto-reconnect under 5 minutes"
+    },
+    "analyze": {
+      "root_cause": "Regional grid has poor frequency regulation due to high renewable penetration without adequate frequency control",
+      "contributing": [
+        "Very high frequency (3,238 events) suggests chronic grid instability",
+        "Short duration (37 min) indicates grid recovers on its own",
+        "Auto-reconnect appears to work \u2014 not requiring manual intervention"
+      ]
+    },
+    "improve": {
+      "solutions": [
+        "Adjust frequency protection settings \u2014 widen acceptable band to plus or minus 0.6 Hz after confirming with grid code",
+        "Implement faster auto-reconnect logic to reduce reconnection delay from 37 min to under 5 min",
+        "Configure turbines to provide frequency support (synthetic inertia) to stabilize grid",
+        "Share data with grid operator showing frequency deviation impacts and request grid improvements"
+      ],
+      "expected_benefit": "Adjusted settings reduce events by 40%, faster reconnect saves ~1,720 hours. Combined LPF reduction: 1-1.5%"
+    },
+    "control": {
+      "monitoring": "Real-time grid frequency monitoring with 1-second resolution, hourly deviation event log",
+      "alerts": [
+        "CRITICAL: More than 10 frequency events in 24 hours \u2014 investigate grid instability",
+        "HIGH: Frequency event duration exceeds 2 hours \u2014 check auto-reconnect logic",
+        "MEDIUM: Increasing trend over 1 month \u2014 schedule grid operator meeting"
+      ],
+      "review": "Daily frequency stability check, weekly trend analysis, monthly report to grid operator"
+    }
+  },
+  "Momentary Grid Loss": {
+    "define": {
+      "what": "Brief complete loss of grid connection (under 2 hours), often caused by grid switching, faults cleared by auto-reclosers, or voltage sags",
+      "when": "Very frequent (3,229 times over 9.9 years) with short duration (37 min average)",
+      "impact": "Turbine disconnects, waits for grid stability, then auto-reconnects. Short but frequent production loss."
+    },
+    "measure": {
+      "frequency": "3,229 episodes over 9.9 years (326/year, 2nd highest frequency)",
+      "duration": "0.61 hours average (37 minutes)",
+      "lpf_impact": "1-2% of total LPF",
+      "target": "Less than 15 events per turbine per year with reconnection under 3 minutes"
+    },
+    "analyze": {
+      "root_cause": "Grid auto-recloser operations and voltage sags from distant grid faults",
+      "contributing": [
+        "Very high frequency suggests weak or fault-prone grid in region",
+        "Duration (37 min) is turbine reconnection delay, not grid recovery time",
+        "Pattern matches Grid Frequency Deviation \u2014 same reconnect logic applies"
+      ]
+    },
+    "improve": {
+      "solutions": [
+        "Implement Fast Frequency Response reconnection to reduce turbine reconnection delay from 37 min to under 3 min",
+        "Upgrade turbines to stay connected during voltage sags (Voltage Ride-Through capability)",
+        "Install better lightning arrestors on transmission lines to reduce lightning-triggered events by 30%",
+        "Request grid fault logs from operator to correlate with turbine trips and identify root causes"
+      ],
+      "expected_benefit": "Faster reconnection saves ~1,830 hours, voltage ride-through reduces events by 50%. Combined LPF reduction: 1.5-2%"
+    },
+    "control": {
+      "monitoring": "Real-time 3-phase voltage monitoring, event logging capturing exact grid conditions at each trip",
+      "alerts": [
+        "CRITICAL: More than 15 grid loss events in 24 hours \u2014 emergency grid operator contact",
+        "HIGH: Event duration exceeds 3 hours \u2014 investigate why auto-reconnect failed",
+        "MEDIUM: Clustering of events (more than 5 in 1 hour) \u2014 check for grid fault sequence"
+      ],
+      "review": "Daily event log review, weekly trend analysis and weather correlation, monthly joint review with grid operator"
+    }
+  },
+  "Grid Voltage Fluctuation": {
+    "define": {
+      "what": "Grid voltage deviates outside acceptable operating range (typically plus or minus 10% of nominal), triggering turbine safety disconnect",
+      "when": "Very frequent (3,181 times over 9.9 years), short duration (37 min average)",
+      "impact": "Turbine protection system disconnects from grid until voltage stabilizes, then auto-reconnects."
+    },
+    "measure": {
+      "frequency": "3,181 episodes over 9.9 years (321/year, 3rd highest frequency)",
+      "duration": "0.61 hours average (37 minutes)",
+      "lpf_impact": "1-2% of total LPF",
+      "target": "Less than 10 events per turbine per year with under 2 min reconnection"
+    },
+    "analyze": {
+      "root_cause": "Grid voltage regulation issues from weak grid infrastructure and large load switching",
+      "contributing": [
+        "Forms a triplet with Grid Frequency Deviation and Momentary Grid Loss \u2014 often the same underlying event",
+        "Short duration indicates turbine reconnect delay, not grid recovery time",
+        "All turbines affected simultaneously \u2014 grid-side voltage problem"
+      ]
+    },
+    "improve": {
+      "solutions": [
+        "Widen voltage tolerance band to plus or minus 12% after checking grid code compliance",
+        "Configure turbines to provide reactive power support to stabilize grid voltage",
+        "Optimize coordinated reconnection logic \u2014 all three grid alarms share same 37-min timer, reduce to under 2 min",
+        "Work with grid operator to install voltage regulation equipment at point of interconnection"
+      ],
+      "expected_benefit": "Wider tolerance reduces events by 35%, faster reconnect saves ~1,850 hours. Combined LPF reduction: 1.5-2%"
+    },
+    "control": {
+      "monitoring": "3-phase voltage monitoring with 1-second resolution, daily voltage stability review",
+      "alerts": [
+        "CRITICAL: More than 10 voltage events in 24 hours \u2014 emergency investigation",
+        "HIGH: Voltage event duration exceeds 3 hours \u2014 check reconnection logic failure",
+        "MEDIUM: Increasing events trend over 2 weeks \u2014 schedule grid operator meeting"
+      ],
+      "review": "Daily voltage event review, weekly detailed analysis, monthly joint meeting with grid operator"
+    }
+  },
+  "Emergency Brake Activation": {
+    "define": {
+      "what": "Mechanical emergency brake system activates to stop turbine rotor immediately",
+      "when": "1,263 times over 9.9 years, often triggered by overspeed conditions or grid loss events",
+      "impact": "Rotor stops within seconds. Requires manual inspection before restart. Average 3.1 hours downtime per event."
+    },
+    "measure": {
+      "frequency": "1,263 episodes over 9.9 years (128/year across 5 turbines)",
+      "duration": "3.14 hours average",
+      "lpf_impact": "~2% of total LPF",
+      "target": "Less than 5 brake activations per turbine per year with under 1 hour downtime"
+    },
+    "analyze": {
+      "root_cause": "Triggered by overspeed protection when wind gusts exceed rotor speed limits, often following grid loss events",
+      "contributing": [
+        "Higher than expected frequency suggests frequent overspeed conditions",
+        "3.1 hour average duration indicates manual inspection and reset required",
+        "Often occurs with grid loss alarms \u2014 grid trips cause sudden load loss then overspeed then brake"
+      ]
+    },
+    "improve": {
+      "solutions": [
+        "Optimize pitch controller to respond faster to wind gusts, preventing overspeed \u2014 reduces brake activations by 40%",
+        "Lower rotor speed setpoint slightly to increase margin before overspeed trigger",
+        "Implement automated brake diagnostic check and auto-restart if safe \u2014 reduces avg downtime from 3.1 hrs to 1 hr",
+        "Use LIDAR or upstream wind sensors to predict gusts and pitch blades preemptively"
+      ],
+      "expected_benefit": "Pitch tuning reduces frequency by 40%, auto-reset saves ~2,650 hours downtime. Combined LPF reduction: 1.5-2%"
+    },
+    "control": {
+      "monitoring": "Real-time rotor speed monitoring with overspeed threshold alerts, daily brake event review",
+      "alerts": [
+        "CRITICAL: Emergency brake fails to stop rotor \u2014 immediate turbine lockout",
+        "HIGH: More than 3 brake events on same turbine in 1 week \u2014 inspect pitch system",
+        "MEDIUM: Brake event during low wind \u2014 investigate spurious activation"
+      ],
+      "review": "Daily emergency brake event review, weekly pitch system performance analysis, monthly brake system inspection"
+    }
+  },
+  "Safety System Activation": {
+    "define": {
+      "what": "General safety system triggers turbine shutdown from multiple possible safety sensors including vibration, temperature, oil pressure",
+      "when": "1,237 times over 9.9 years, similar frequency and duration to Emergency Brake Activation",
+      "impact": "Immediate turbine shutdown, requires manual safety inspection before restart. Average 3.2 hours per event."
+    },
+    "measure": {
+      "frequency": "1,237 episodes over 9.9 years (125/year across 5 turbines)",
+      "duration": "3.18 hours average",
+      "lpf_impact": "~2% of total LPF",
+      "target": "Less than 8 safety shutdowns per turbine per year with under 1.5 hour downtime"
+    },
+    "analyze": {
+      "root_cause": "Multiple safety sensors triggering shutdowns \u2014 vibration, temperature, oil pressure, or emergency stop",
+      "contributing": [
+        "Very similar frequency and duration to Emergency Brake Activation \u2014 likely related cascading events",
+        "3.2 hour duration indicates standardized safety inspection protocol required",
+        "Affects all turbines equally \u2014 systemic safety system settings or site conditions"
+      ]
+    },
+    "improve": {
+      "solutions": [
+        "Install data logging to identify which specific safety sensor is triggering most frequently",
+        "Install advanced vibration monitoring to detect issues before safety shutdown occurs",
+        "Optimize post-shutdown inspection process using remote diagnostics to reduce duration from 3.2 hrs to 1.5 hrs",
+        "Add more temperature sensors for early warning before safety limits are reached"
+      ],
+      "expected_benefit": "Vibration monitoring reduces frequency by 35%, streamlined inspection saves ~2,103 hours. Combined LPF reduction: 1.5-2%"
+    },
+    "control": {
+      "monitoring": "Real-time all safety sensor monitoring dashboard, daily safety system activation review",
+      "alerts": [
+        "CRITICAL: Safety system fails to trigger during unsafe condition \u2014 immediate investigation",
+        "HIGH: Same turbine has more than 4 safety shutdowns in 1 month \u2014 deep diagnostic required",
+        "MEDIUM: New pattern of safety activations \u2014 investigate environmental changes"
+      ],
+      "review": "Daily safety event log review, weekly pattern analysis, monthly safety system calibration check"
+    }
+  },
+  "Overspeed Protection Triggered": {
+    "define": {
+      "what": "Rotor speed exceeds maximum safe operating limit, triggering protective shutdown before overspeed damage occurs",
+      "when": "1,236 times over 9.9 years, nearly identical frequency to Emergency Brake and Safety System alarms",
+      "impact": "Immediate pitch to feather and emergency brake activation. Manual restart required. Average 3.1 hours per event."
+    },
+    "measure": {
+      "frequency": "1,236 episodes over 9.9 years (125/year across 5 turbines)",
+      "duration": "3.12 hours average",
+      "lpf_impact": "~2% of total LPF",
+      "target": "Less than 3 overspeed events per turbine per year with under 1 hour downtime"
+    },
+    "analyze": {
+      "root_cause": "Wind gusts exceed pitch system response speed, or grid loss causes sudden load loss and rotor acceleration",
+      "contributing": [
+        "Nearly identical frequency to Emergency Brake (1,263) and Safety System (1,237) \u2014 likely same events counted three ways",
+        "All turbines affected equally \u2014 site wind conditions or control settings",
+        "Likely triggered by grid loss events causing sudden load loss"
+      ]
+    },
+    "improve": {
+      "solutions": [
+        "Upgrade to faster pitch actuators and predictive pitch control \u2014 reduces overspeed events by 50%",
+        "During grid loss, simulate electrical load with emergency resistors to prevent rotor acceleration",
+        "Slightly increase overspeed threshold after aerodynamic analysis confirms safety",
+        "Implement LIDAR-based wind gust prediction for proactive pitch adjustments"
+      ],
+      "expected_benefit": "Advanced pitch reduces frequency by 50%, grid loss load emulation prevents 60% of grid-loss overspeed events. Combined LPF reduction: 1.5-2%"
+    },
+    "control": {
+      "monitoring": "Real-time rotor speed monitoring with early warning at 90% of overspeed limit",
+      "alerts": [
+        "CRITICAL: Overspeed protection fails \u2014 immediate turbine lockout",
+        "HIGH: More than 5 overspeed events on one turbine in 1 month \u2014 pitch system inspection",
+        "MEDIUM: Increasing trend of overspeed events \u2014 review control settings"
+      ],
+      "review": "Daily overspeed event log review, weekly rotor speed trend analysis, quarterly overspeed protection system test"
+    }
+  },
+  "Yaw System Hydraulic Fault": {
+    "define": {
+      "what": "Hydraulic system controlling nacelle yaw (directional positioning) experiences fault \u2014 low pressure, valve failure, or hydraulic motor malfunction",
+      "when": "Only 19 times over 9.9 years (rare) but extremely long duration (68.5 hours average \u2014 nearly 3 days)",
+      "impact": "Nacelle cannot yaw to optimal wind direction. Very long downtime due to complex repair requiring specialist access."
+    },
+    "measure": {
+      "frequency": "19 episodes over 9.9 years (2/year across all turbines)",
+      "duration": "68.5 hours average (nearly 3 days)",
+      "lpf_impact": "0.5-1% of total LPF",
+      "target": "Less than 0.2 faults per turbine per year with under 24 hour downtime"
+    },
+    "analyze": {
+      "root_cause": "Hydraulic oil contamination causing valve sticking or motor damage, or hydraulic pump wear requiring replacement",
+      "contributing": [
+        "Extremely long duration (68 hours) suggests parts must be ordered and specialist access required",
+        "Low frequency suggests component wear-out not design flaw",
+        "Random distribution across turbines \u2014 not site-specific issue"
+      ]
+    },
+    "improve": {
+      "solutions": [
+        "Stock critical yaw hydraulic components (pump, motor, valves) to reduce downtime from 68 hrs to 24 hrs",
+        "Install hydraulic pressure and temperature sensors with trend analysis for predictive maintenance",
+        "Implement regular hydraulic oil sampling and laboratory analysis quarterly",
+        "Pre-arrange rapid response OEM service contract to reduce response time by 24 hours"
+      ],
+      "expected_benefit": "Spare parts reduce duration from 68 hrs to 24 hrs, condition monitoring prevents 50% of failures. Combined LPF reduction: 0.5-0.8%"
+    },
+    "control": {
+      "monitoring": "Daily yaw hydraulic pressure monitoring, weekly yaw system performance check",
+      "alerts": [
+        "CRITICAL: Yaw hydraulic pressure below 50% of normal \u2014 immediate inspection",
+        "HIGH: Yaw system response time degrading \u2014 schedule maintenance",
+        "MEDIUM: Oil analysis shows contamination \u2014 plan oil change"
+      ],
+      "review": "Weekly yaw system health check, monthly hydraulic system trend review, quarterly yaw component wear inspection"
+    }
+  },
+  "Pitch System Hydraulic Fault": {
+    "define": {
+      "what": "Hydraulic system controlling blade pitch (angle adjustment) experiences fault \u2014 low pressure, valve malfunction, cylinder leak, or accumulator failure",
+      "when": "Only 15 times over 9.9 years (rare) but extremely long duration (65.6 hours average \u2014 2.7 days)",
+      "impact": "Blades cannot adjust pitch angle. Turbine MUST shut down as pitch is critical for power regulation and overspeed protection."
+    },
+    "measure": {
+      "frequency": "15 episodes over 9.9 years (1.5/year across all turbines)",
+      "duration": "65.6 hours average (2.7 days)",
+      "lpf_impact": "~0.5% of total LPF",
+      "target": "Less than 0.1 faults per turbine per year with under 20 hour downtime"
+    },
+    "analyze": {
+      "root_cause": "Hydraulic accumulator bladder failure (most common), pitch cylinder seal wear causing internal leakage, or valve contamination",
+      "contributing": [
+        "Extremely long duration suggests specialist parts must be ordered and rope access or crane required",
+        "Each turbine has 3 independent pitch systems (one per blade) \u2014 multiple possible failure points",
+        "Low frequency suggests wear-out failure mode, not design issue"
+      ]
+    },
+    "improve": {
+      "solutions": [
+        "Stock complete pitch hydraulic components (accumulators, cylinders, valves) to reduce downtime from 65 hrs to 20 hrs",
+        "Install continuous pressure monitoring on all pitch circuits with trend analysis",
+        "Proactively replace pitch accumulators every 5 years before failure \u2014 eliminates 70% of pitch hydraulic faults",
+        "Train in-house technicians for pitch hydraulic repairs to reduce OEM dependency"
+      ],
+      "expected_benefit": "Spare parts reduce duration to 20 hrs, accumulator replacement program eliminates 70% of faults. Combined LPF reduction: 0.4-0.6%"
+    },
+    "control": {
+      "monitoring": "Real-time pitch hydraulic pressure monitoring on all 3 blades per turbine, daily pressure trend check",
+      "alerts": [
+        "CRITICAL: Pitch pressure below 60% on any blade \u2014 immediate shutdown and repair",
+        "HIGH: Pitch response time degrading more than 10% \u2014 schedule maintenance",
+        "MEDIUM: Accumulator pre-charge pressure low \u2014 plan accumulator replacement"
+      ],
+      "review": "Daily pitch pressure monitoring review, weekly pitch system performance analysis, every 5 years proactive accumulator replacement"
+    }
+  },
+  "Hydraulic Oil Contamination": {
+    "define": {
+      "what": "Hydraulic oil quality degrades due to contamination from water, particles, or oxidation, causing system performance issues and component damage",
+      "when": "13 times over 9.9 years, very long duration (70.4 hours average \u2014 nearly 3 days) due to complete system flush required",
+      "impact": "Contaminated oil damages hydraulic components. Requires complete oil change and system flush before restart."
+    },
+    "measure": {
+      "frequency": "13 episodes over 9.9 years (1.3/year across all turbines)",
+      "duration": "70.4 hours average (nearly 3 days)",
+      "lpf_impact": "0.4-0.5% of total LPF",
+      "target": "Less than 0.1 events per turbine per year with under 24 hour downtime"
+    },
+    "analyze": {
+      "root_cause": "Water ingress from seal leaks or condensation, particle contamination from component wear, or oil oxidation from overdue change schedule",
+      "contributing": [
+        "Extremely long duration indicates complete hydraulic system flush required plus possible component replacement",
+        "Low frequency suggests lack of preventive maintenance program",
+        "Affects multiple turbines \u2014 fleet-wide oil maintenance issue"
+      ]
+    },
+    "improve": {
+      "solutions": [
+        "Schedule hydraulic oil changes every 2 years regardless of condition \u2014 prevents 80% of contamination events",
+        "Implement quarterly hydraulic oil sampling and laboratory analysis for early detection",
+        "Upgrade hydraulic filters to higher micron rating to reduce contamination buildup by 60%",
+        "Install desiccant breathers on hydraulic reservoirs to prevent moisture ingress"
+      ],
+      "expected_benefit": "Preventive oil changes eliminate 80% of events, rapid oil change kit reduces duration to 24 hrs. Combined LPF reduction: 0.3-0.4%"
+    },
+    "control": {
+      "monitoring": "Quarterly hydraulic oil sampling and lab analysis (viscosity, particle count, water content), monthly visual oil inspection",
+      "alerts": [
+        "CRITICAL: Oil analysis shows severe contamination \u2014 immediate oil change",
+        "HIGH: Oil analysis shows moderate contamination trending worse \u2014 schedule oil change within 2 weeks",
+        "MEDIUM: Oil approaching 2-year service life \u2014 plan preventive oil change"
+      ],
+      "review": "Quarterly oil analysis results review, annually hydraulic oil change schedule compliance check"
+    }
+  },
+  "Converter Circuit Fault": {
+    "define": {
+      "what": "Power converter experiences circuit failure \u2014 IGBT failure, capacitor fault, circuit board malfunction, or cooling system failure",
+      "when": "Only 4 times over 9.9 years (very rare) but extremely long duration (119.4 hours \u2014 5 days)",
+      "impact": "Converter failure means complete turbine shutdown. Extremely long downtime due to specialist parts and OEM technician required."
+    },
+    "measure": {
+      "frequency": "4 episodes over 9.9 years (0.4/year across all turbines)",
+      "duration": "119.4 hours average (5 days)",
+      "lpf_impact": "0.2-0.3% of total LPF",
+      "target": "Less than 0.05 faults per turbine per year with under 48 hour downtime"
+    },
+    "analyze": {
+      "root_cause": "IGBT power switching component failure due to thermal cycling, or DC-link capacitor failure (common wear-out component)",
+      "contributing": [
+        "Extremely long duration (119 hours) indicates converter components not in stock and OEM specialist required",
+        "Very low frequency (4 events) suggests random component failures not systemic",
+        "Converters are approaching end of design life at 10 years old"
+      ]
+    },
+    "improve": {
+      "solutions": [
+        "Stock complete converter spare modules (IGBT modules, capacitor banks, control boards) to reduce downtime from 119 hrs to 48 hrs",
+        "Install real-time monitoring of converter temperatures, DC-link voltage, and IGBT switching performance",
+        "Contract with OEM to keep emergency parts at regional depot \u2014 reduces parts delivery from 4 days to 1 day",
+        "Perform preventive converter overhaul every 8 years replacing high-wear components before failure"
+      ],
+      "expected_benefit": "Critical spares reduce duration from 119 hrs to 48 hrs, converter monitoring prevents 50% of failures. Combined LPF reduction: 0.15-0.2%"
+    },
+    "control": {
+      "monitoring": "Real-time converter temperature, DC voltage, current monitoring, daily converter performance data review",
+      "alerts": [
+        "CRITICAL: Converter temperature exceeds 95 degrees C \u2014 immediate load reduction",
+        "HIGH: DC-link voltage instability \u2014 schedule detailed inspection",
+        "MEDIUM: Converter efficiency degrading more than 5% \u2014 plan maintenance"
+      ],
+      "review": "Daily converter performance monitoring, monthly health trend review, every 8 years major converter component overhaul"
+    }
+  },
+  "Generator Bearing Overheating": {
+    "define": {
+      "what": "Generator bearing temperature exceeds safe operating limit, indicating bearing damage, lubrication failure, or misalignment",
+      "when": "Only 3 times over 9.9 years (extremely rare) but catastrophically long duration (159.2 hours \u2014 6.6 days)",
+      "impact": "Bearing failure can damage generator rotor and stator. Requires complete generator bearing replacement with crane access."
+    },
+    "measure": {
+      "frequency": "3 episodes over 9.9 years (0.3/year across all turbines)",
+      "duration": "159.2 hours average (6.6 days \u2014 longest mechanical repair)",
+      "lpf_impact": "~0.2% of total LPF",
+      "target": "Less than 0.02 faults per turbine per year with under 72 hour downtime"
+    },
+    "analyze": {
+      "root_cause": "Bearing lubrication failure from grease degradation, insufficient grease, or wrong grease type",
+      "contributing": [
+        "Extremely long duration (159 hours) because generator must be disassembled and may require crane to access nacelle",
+        "Very low frequency (3 events) \u2014 likely age-related wear not systemic",
+        "Bearing failures often occur without warning \u2014 catastrophic rather than gradual"
+      ]
+    },
+    "improve": {
+      "solutions": [
+        "Install continuous vibration sensors on generator bearings for 2-6 weeks early warning before catastrophic failure",
+        "Enhance temperature monitoring with trend analysis and alerts at lower thresholds",
+        "Replace generator bearings proactively every 60,000 operating hours before failure \u2014 prevents 80% of failures",
+        "Stock complete generator bearing assemblies to reduce downtime from 159 hrs to 72 hrs"
+      ],
+      "expected_benefit": "Vibration monitoring converts emergency repairs to planned maintenance, saving ~400 hours. Combined LPF reduction: 0.15-0.18%"
+    },
+    "control": {
+      "monitoring": "Real-time generator bearing vibration and temperature monitoring, hourly vibration spectrum analysis",
+      "alerts": [
+        "CRITICAL: Bearing vibration exceeds 11 mm/s or temperature exceeds 95 degrees C \u2014 immediate shutdown",
+        "HIGH: Bearing vibration increasing more than 50% above baseline \u2014 schedule urgent inspection",
+        "MEDIUM: Bearing temperature trending up 10 degrees over 1 month \u2014 plan maintenance"
+      ],
+      "review": "Daily vibration and temperature monitoring, weekly bearing health trend analysis, every 60,000 hours preventive bearing replacement"
+    }
+  },
+  "Power Electronics Failure": {
+    "define": {
+      "what": "Power electronics components fail \u2014 gate drivers, protection relays, control circuits, or auxiliary power supplies",
+      "when": "Only 2 times over 9.9 years (extremely rare) but longest average downtime of any alarm type (262 hours \u2014 10.9 days)",
+      "impact": "Complete turbine shutdown. Extremely long downtime due to very specialized components requiring international shipping."
+    },
+    "measure": {
+      "frequency": "2 episodes over 9.9 years (0.2/year across all turbines)",
+      "duration": "262 hours average (10.9 days \u2014 longest downtime alarm)",
+      "lpf_impact": "~0.2% of total LPF",
+      "target": "Less than 0.02 faults per turbine per year with under 96 hour downtime"
+    },
+    "analyze": {
+      "root_cause": "Rare electronic component failure \u2014 relay, circuit board, or power supply failure from age or lightning surge",
+      "contributing": [
+        "Longest average duration of any alarm type (262 hours) \u2014 components not in stock anywhere",
+        "Only 2 events \u2014 could be completely different failure modes each time",
+        "May require custom circuit board manufacturing or programming"
+      ]
+    },
+    "improve": {
+      "solutions": [
+        "Stock ALL critical power electronics modules including rare components \u2014 reduces downtime from 262 hrs to 96 hrs",
+        "Install industrial-grade surge protection on all power electronics circuits \u2014 prevents 60% of surge-related failures",
+        "Pre-pay for guaranteed OEM engineer deployment within 48 hours via retainer contract",
+        "Monitor all power supply voltages, temperatures, and signal integrity for early degradation warning"
+      ],
+      "expected_benefit": "Spare parts kit reduces duration from 262 hrs to 96 hrs, surge protection prevents 60% of failures. Combined LPF reduction: 0.12-0.15%"
+    },
+    "control": {
+      "monitoring": "Real-time power supply voltage monitoring and control circuit health checks, daily electronics self-diagnostics",
+      "alerts": [
+        "CRITICAL: Power supply voltage out of tolerance \u2014 immediate investigation",
+        "HIGH: Unexplained control circuit alarms \u2014 schedule inspection",
+        "MEDIUM: Surge protection device activated \u2014 investigate cause"
+      ],
+      "review": "Daily electronics health monitoring, monthly performance review, annually surge protection system test, after any lightning strike full inspection"
+    }
+  },
+  "Transformer Oil Temperature High": {
+    "define": {
+      "what": "Step-up transformer oil temperature exceeds safe operating limit, indicating cooling system failure, overloading, or oil degradation",
+      "when": "Only 2 times over 9.9 years (extremely rare) but long duration (132 hours \u2014 5.5 days)",
+      "impact": "High oil temperature damages transformer insulation. Requires cooling system repair or oil replacement before restart."
+    },
+    "measure": {
+      "frequency": "2 episodes over 9.9 years (0.2/year across all turbines)",
+      "duration": "132 hours average (5.5 days)",
+      "lpf_impact": "~0.1% of total LPF",
+      "target": "Less than 0.02 faults per turbine per year with under 48 hour downtime"
+    },
+    "analyze": {
+      "root_cause": "Transformer cooling system failure from radiator fans not working or oil pump failure",
+      "contributing": [
+        "Long duration (132 hours) \u2014 transformer must cool down before repair, specialist parts required",
+        "Very low frequency (2 events) \u2014 random failures or maintenance neglect",
+        "Transformer is critical single-point-of-failure component"
+      ]
+    },
+    "improve": {
+      "solutions": [
+        "Annual inspection and cleaning of radiator, fans, and oil pumps \u2014 prevents 70% of cooling system failures",
+        "Annual dissolved gas analysis (DGA) of transformer oil to detect degradation early",
+        "Stock spare transformer cooling fans and pumps to reduce downtime from 132 hrs to 48 hrs",
+        "Enhance temperature monitoring with predictive alerts at lower temperature thresholds"
+      ],
+      "expected_benefit": "Preventive maintenance prevents 70% of failures, spare parts reduce duration. Combined LPF reduction: 0.06-0.08%"
+    },
+    "control": {
+      "monitoring": "Real-time transformer oil temperature monitoring (top oil, bottom oil, winding hotspot), daily trend analysis",
+      "alerts": [
+        "CRITICAL: Oil temperature exceeds 95 degrees C \u2014 load reduction or shutdown",
+        "HIGH: Oil temperature exceeds 85 degrees C for more than 4 hours \u2014 investigate cooling system",
+        "MEDIUM: Oil temperature trending up 10 degrees over 1 month \u2014 schedule inspection"
+      ],
+      "review": "Daily temperature monitoring, weekly cooling system check, annually oil analysis and preventive maintenance"
+    }
+  },
+  "Hydraulic Filter Clogged": {
+    "define": {
+      "what": "Hydraulic system filter becomes clogged with particles, restricting oil flow and reducing hydraulic pressure",
+      "when": "4 times over 9.9 years (rare), moderate duration (15.9 hours) \u2014 indicates reactive maintenance approach",
+      "impact": "Reduced hydraulic pressure affects pitch and yaw systems. Can cause turbine shutdown if pressure drops too low."
+    },
+    "measure": {
+      "frequency": "4 episodes over 9.9 years (0.4/year across all turbines)",
+      "duration": "15.9 hours average",
+      "lpf_impact": "~0.03% of total LPF",
+      "target": "Less than 0.05 events per turbine per year with under 8 hour downtime"
+    },
+    "analyze": {
+      "root_cause": "Filter not changed on schedule (exceeded service life), or high contamination in hydraulic system generating excessive particles",
+      "contributing": [
+        "Low frequency but should be ZERO \u2014 filter changes should be preventive not reactive",
+        "Indicates lack of preventive filter replacement program",
+        "May correlate with contamination events from component wear"
+      ]
+    },
+    "improve": {
+      "solutions": [
+        "Change hydraulic filters every 12 months regardless of condition \u2014 eliminates 95% of clogged filter events",
+        "Install pressure sensors before and after filters to detect clogging early for planned replacement",
+        "When filter clogs, analyze filter media to identify contamination source for targeted fixes",
+        "Install dual-filter system with bypass valve for online filter changes with no downtime"
+      ],
+      "expected_benefit": "Preventive filter changes eliminate 95% of events, saves ~60 hours over 9.9 years. Combined LPF reduction: 0.025-0.03%"
+    },
+    "control": {
+      "monitoring": "Real-time hydraulic filter differential pressure monitoring, weekly hydraulic pressure and flow check",
+      "alerts": [
+        "CRITICAL: Filter differential pressure exceeds 5 bar \u2014 immediate filter change",
+        "HIGH: Filter differential pressure exceeds 3 bar \u2014 schedule filter change within 1 week",
+        "MEDIUM: Filter approaching 12 months \u2014 plan preventive replacement"
+      ],
+      "review": "Weekly filter pressure monitoring, monthly hydraulic system health check, annually preventive filter replacement"
+    }
+  },
+  "Generator Winding Temperature High": {
+    "define": {
+      "what": "Generator stator winding temperature exceeds safe operating limit, indicating cooling failure, insulation degradation, or overloading",
+      "when": "Only 2 times over 9.9 years (extremely rare), long duration (127 hours \u2014 5.3 days)",
+      "impact": "High winding temperature damages insulation and can lead to generator failure requiring complete rewind."
+    },
+    "measure": {
+      "frequency": "2 episodes over 9.9 years (0.2/year across all turbines)",
+      "duration": "127.1 hours average (5.3 days)",
+      "lpf_impact": "~0.1% of total LPF",
+      "target": "Less than 0.02 faults per turbine per year with under 48 hour downtime"
+    },
+    "analyze": {
+      "root_cause": "Generator cooling system failure from fans not working or air filter clogged",
+      "contributing": [
+        "Long duration (127 hours) \u2014 generator must cool down before inspection, specialized technician required",
+        "Very low frequency (2 events) \u2014 random failures or age-related degradation",
+        "May correlate with high production periods when generator runs hot"
+      ]
+    },
+    "improve": {
+      "solutions": [
+        "Annual inspection of cooling fans, air filters, and air ducts \u2014 prevents 70% of cooling-related failures",
+        "Enhance winding temperature monitoring with predictive alerts at lower thresholds",
+        "Annual insulation resistance testing to detect degradation early before failure",
+        "Stock spare generator cooling fans to reduce downtime from 127 hrs to 48 hrs"
+      ],
+      "expected_benefit": "Preventive maintenance prevents 70% of failures, spare parts reduce duration. Combined LPF reduction: 0.06-0.08%"
+    },
+    "control": {
+      "monitoring": "Real-time generator winding temperature across all phases and cooling fan status, daily trend analysis",
+      "alerts": [
+        "CRITICAL: Winding temperature exceeds 155 degrees C \u2014 load reduction or shutdown",
+        "HIGH: Winding temperature exceeds 140 degrees C for more than 2 hours \u2014 investigate cooling",
+        "MEDIUM: Winding temperature trending up 15 degrees over 1 month \u2014 schedule inspection"
+      ],
+      "review": "Daily temperature monitoring, weekly cooling and electrical balance checks, annually insulation testing and preventive maintenance"
+    }
+  },
+  "Hydraulic Pressure Drop": {
+    "define": {
+      "what": "Hydraulic system pressure drops below minimum operating threshold, affecting pitch, yaw, and brake systems",
+      "when": "3 times over 9.9 years (rare), moderate duration (58.66 hours total across episodes)",
+      "impact": "Reduced hydraulic pressure compromises pitch control, yaw control, and braking capability. Turbine must shut down for safety."
+    },
+    "measure": {
+      "frequency": "3 episodes over 9.9 years (0.3/year across all turbines)",
+      "duration": "19.6 hours average",
+      "lpf_impact": "~0.03% of total LPF",
+      "target": "Less than 0.05 events per turbine per year with under 8 hour downtime"
+    },
+    "analyze": {
+      "root_cause": "Hydraulic line leak, worn pump components, or seal failure causing pressure loss in the system",
+      "contributing": [
+        "Low frequency suggests intermittent seal failures or gradual pump wear",
+        "Safety-critical \u2014 turbine cannot operate without adequate hydraulic pressure",
+        "May cascade into pitch and yaw system faults if not addressed quickly"
+      ]
+    },
+    "improve": {
+      "solutions": [
+        "Inspect all hydraulic lines and connections for leaks during every scheduled maintenance visit",
+        "Replace worn hydraulic pump components or full pump assembly based on condition monitoring",
+        "Install pressure transducers on all critical hydraulic circuits for real-time monitoring",
+        "Implement automatic shutdown logic on pressure drop detection to prevent cascade failures"
+      ],
+      "expected_benefit": "Pressure monitoring enables early intervention, saves ~45 hours over 9.9 years. Combined LPF reduction: 0.02-0.03%"
+    },
+    "control": {
+      "monitoring": "Real-time hydraulic pressure monitoring on all circuits, weekly hydraulic system inspection",
+      "alerts": [
+        "CRITICAL: Hydraulic pressure below minimum threshold \u2014 immediate shutdown",
+        "HIGH: Pressure trending downward \u2014 inspect for leaks within 24 hours",
+        "MEDIUM: Pressure slightly below nominal \u2014 monitor and schedule inspection"
+      ],
+      "review": "Weekly pressure monitoring review, monthly full hydraulic system inspection, quarterly pump condition assessment"
+    }
+  },
+  "Hydraulic Valve Response Slow": {
+    "define": {
+      "what": "Hydraulic control valve responds slower than expected, indicating valve sticking, solenoid degradation, or control signal issues",
+      "when": "4 times over 9.9 years (rare), very short duration (0.25 hours \u2014 15 minutes average \u2014 shortest alarm in dataset)",
+      "impact": "Very brief events that often self-clear. Lowest impact alarm in entire dataset. May be intermittent or false alarms."
+    },
+    "measure": {
+      "frequency": "4 episodes over 9.9 years (0.4/year across all turbines)",
+      "duration": "0.25 hours average (15 minutes \u2014 shortest duration alarm)",
+      "lpf_impact": "Less than 0.01% of total LPF (minimal impact)",
+      "target": "Less than 0.05 events per turbine per year"
+    },
+    "analyze": {
+      "root_cause": "Valve sticking due to contamination or varnish buildup, or solenoid coil degradation causing slower response",
+      "contributing": [
+        "Extremely short duration (15 minutes) suggests alarm may be intermittent and self-clearing",
+        "Could be false alarms or cold oil causing sluggish response at startup",
+        "Lowest frequency and shortest duration \u2014 lowest priority alarm in dataset"
+      ]
+    },
+    "improve": {
+      "solutions": [
+        "Implement quarterly valve response time measurement to detect degradation before alarm occurs",
+        "Add weekly automatic valve cycling to prevent sticking (software change, zero cost)",
+        "Review alarm threshold \u2014 may be too sensitive causing nuisance alarms",
+        "Annual valve cleaning and solenoid inspection as part of scheduled maintenance"
+      ],
+      "expected_benefit": "Valve exercise program reduces events by 75%, saves less than 1 hour total. Minimal LPF impact but improves system reliability."
+    },
+    "control": {
+      "monitoring": "Weekly automated valve exercise (cycle all valves), monthly valve response time test",
+      "alerts": [
+        "CRITICAL: Valve completely fails to respond \u2014 immediate shutdown",
+        "HIGH: Valve response time more than 2x normal \u2014 schedule maintenance",
+        "MEDIUM: Occasional slow response alarms \u2014 monitor trend"
+      ],
+      "review": "Monthly valve performance trending, quarterly valve response time testing, annually preventive valve maintenance"
+    }
+  }
+}

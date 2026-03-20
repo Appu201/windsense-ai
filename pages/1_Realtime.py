@@ -1,5 +1,3 @@
-
-
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -79,7 +77,7 @@ st.markdown("""
 
     /* Control metric font sizes */
     [data-testid="stMetricValue"] {
-        font-size: 1.8rem !important;  /* Reduced from default 2.5rem */
+        font-size: 1.8rem !important;
     }
 
     [data-testid="stMetricLabel"] {
@@ -90,12 +88,10 @@ st.markdown("""
         font-size: 0.8rem !important;
     }
 
-    /* Alternative: If you want even smaller */
     .metric-small [data-testid="stMetricValue"] {
         font-size: 1.4rem !important;
     }
 
-    /* Reduce DMAIC Measure metric font size so full text is visible */
     .dmaic-measure [data-testid="stMetricValue"] {
         font-size: 1.0rem !important;
         white-space: normal !important;
@@ -106,11 +102,6 @@ st.markdown("""
     }
 </style>
 """, unsafe_allow_html=True)
-# ═══════════════════════════════════════════════════════════════════
-# AUTH GUARD
-# ═══════════════════════════════════════════════════════════════════
-if not st.session_state.get('authenticated', False):
-    st.switch_page('pages/login.py')
 
 # ═══════════════════════════════════════════════════════════════════
 # FILE PATHS
@@ -121,24 +112,6 @@ DATA_PATH = os.path.join(os.path.dirname(os.path.abspath('app.py')), 'data') + o
 MODEL_PATH = os.path.join(os.path.dirname(os.path.abspath('app.py')), 'models') + os.sep
 OUTPUT_PATH = os.path.join(os.path.dirname(os.path.abspath('app.py')), 'data') + os.sep
 
-# ═══════════════════════════════════════════════════════════════════
-# LOAD DMAIC DATABASE (used by both RCA Engine and DMAIC Tab)
-# ═══════════════════════════════════════════════════════════════════
-
-@st.cache_data
-def load_dmaic_database():
-    """Load the complete DMAIC database from JSON"""
-    try:
-        dmaic_json_path = DATA_PATH + 'dmaic_complete_database.json'
-        if os.path.exists(dmaic_json_path):
-            with open(dmaic_json_path, 'r') as f:
-                return json.load(f)
-        else:
-            return {}
-    except Exception as e:
-        return {}
-
-DMAIC_DATABASE = load_dmaic_database()
 # ═══════════════════════════════════════════════════════════════════
 # PERSISTENT ACKNOWLEDGMENT STORAGE
 # ═══════════════════════════════════════════════════════════════════
@@ -159,7 +132,23 @@ def save_acknowledgment(alarm_id, ack_data):
     """Save acknowledgment to persistent file"""
     try:
         acks = load_acknowledgments()
-        acks[alarm_id] = ack_data
+        
+        # Convert ack_data to be JSON serializable
+        def make_serializable(obj):
+            if isinstance(obj, dict):
+                return {k: make_serializable(v) for k, v in obj.items()}
+            elif isinstance(obj, list):
+                return [make_serializable(i) for i in obj]
+            elif hasattr(obj, 'item'):
+                # Catches numpy int64, float64, etc.
+                return obj.item()
+            elif isinstance(obj, (int, float, str, bool)) or obj is None:
+                return obj
+            else:
+                return str(obj)
+        
+        acks[alarm_id] = make_serializable(ack_data)
+        
         with open(ACK_FILE, 'w') as f:
             json.dump(acks, f, indent=2)
         return True
@@ -183,29 +172,34 @@ def get_dashboard_url():
     return "http://localhost:8501"
 
 DASHBOARD_URL = get_dashboard_url()
-DASHBOARD_URL = get_dashboard_url()
 
 # ═══════════════════════════════════════════════════════════════════
 # HANDLE ACKNOWLEDGMENT FROM EMAIL LINK
+# *** THIS MUST BE BEFORE THE AUTH GUARD ***
 # ═══════════════════════════════════════════════════════════════════
 
 query_params = st.query_params
 
-# Handle acknowledgment from email link
 if 'ack' in query_params:
     alarm_id = query_params['ack']
 
-    # Load existing acknowledgments
-    if 'acknowledged_alarms' not in st.session_state:
-        st.session_state.acknowledged_alarms = load_acknowledgments()
+    # Load directly from file — no session state needed
+    existing_acks = load_acknowledgments()
 
-    # Check if already acknowledged
-    if alarm_id in st.session_state.acknowledged_alarms:
-        st.warning(f"⚠️ Alarm {alarm_id} was already acknowledged previously.")
-        prev_ack = st.session_state.acknowledged_alarms[alarm_id]
-        st.info(f"Previously acknowledged at: {prev_ack.get('time', 'Unknown')}")
+    if alarm_id in existing_acks:
+        prev_ack = existing_acks[alarm_id]
+        st.markdown(f"""
+        <div style="text-align: center; padding: 50px;">
+            <h1 style="color: #FF8800;">⚠️ Already Acknowledged</h1>
+            <p style="font-size: 1.5rem; margin: 20px 0;">
+                Alarm <strong>{alarm_id}</strong> was already acknowledged.
+            </p>
+            <p style="color: #666;">
+                Previously acknowledged at: {prev_ack.get('time', prev_ack.get('ack_time', 'Unknown'))}
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
     else:
-        # Save acknowledgment
         ack_data = {
             'time': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
             'method': 'email_link',
@@ -213,9 +207,6 @@ if 'ack' in query_params:
         }
 
         if save_acknowledgment(alarm_id, ack_data):
-            st.session_state.acknowledged_alarms[alarm_id] = ack_data
-
-            # Show success page
             st.markdown(f"""
             <div style="text-align: center; padding: 50px;">
                 <h1 style="color: #4CAF50;">✅ Acknowledgment Successful!</h1>
@@ -228,30 +219,73 @@ if 'ack' in query_params:
                 </p>
             </div>
             """, unsafe_allow_html=True)
-
             st.balloons()
+        else:
+            st.error("❌ Failed to save acknowledgment. Please try again or acknowledge from the dashboard.")
 
-    # Button to return to dashboard
     st.divider()
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
-        if st.button("🏠 Return to Dashboard", use_container_width=True, type="primary"):
-            st.query_params.clear()
-            st.rerun()
+        st.markdown("""
+        <div style="text-align: center;">
+            <a href="http://localhost:8501" style="background-color: #1f77b4; color: white; padding: 12px 30px; 
+            text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold;">
+                🏠 Return to Dashboard
+            </a>
+        </div>
+        """, unsafe_allow_html=True)
 
     st.stop()
+
+# ═══════════════════════════════════════════════════════════════════
+# AUTH GUARD
+# ═══════════════════════════════════════════════════════════════════
+if not st.session_state.get('authenticated', False):
+    st.switch_page('pages/login.py')
+
+# Session-aware ack loading
+if not st.session_state.get('session_initialized', False):
+    # New session — wipe and start fresh
+    try:
+        with open(ACK_FILE, 'w') as f:
+            json.dump({}, f)
+    except:
+        pass
+    st.session_state.acknowledged_alarms = {}
+    st.session_state.session_initialized = True
+else:
+    # Refresh within same session — preserve acks
+    st.session_state.acknowledged_alarms = load_acknowledgments()
+
+# ═══════════════════════════════════════════════════════════════════
+# LOAD DMAIC DATABASE (used by both RCA Engine and DMAIC Tab)
+# ═══════════════════════════════════════════════════════════════════
+
+@st.cache_data
+def load_dmaic_database():
+    """Load the complete DMAIC database from JSON"""
+    try:
+        dmaic_json_path = DATA_PATH + 'dmaic_complete_database.json'
+        if os.path.exists(dmaic_json_path):
+            with open(dmaic_json_path, 'r') as f:
+                return json.load(f)
+        else:
+            return {}
+    except Exception as e:
+        return {}
+
+DMAIC_DATABASE = load_dmaic_database()
 
 # ═══════════════════════════════════════════════════════════════════
 # STAKEHOLDER DATABASE & NOTIFICATION SYSTEM
 # ═══════════════════════════════════════════════════════════════════
 
-# Stakeholder database for alarm notifications
 STAKEHOLDERS = {
     'Main Controller Fault': {
         'primary': {'name': 'Divya', 'role': 'Control Systems Engineer', 'email': 'divyajay.1612@gmail.com', 'phone': '+918778838055'},
         'secondary': {'name': 'Sarah Johnson', 'role': 'Senior Engineer', 'email': 'sarah.j@windfarm.com', 'phone': '+1234567891'},
         'management': {'name': 'Mike Davis', 'role': 'Engineering Manager', 'email': 'mike.d@windfarm.com', 'phone': '+1234567892'},
-        'escalation_time': 30  # minutes
+        'escalation_time': 30
     },
     'Grid Frequency Deviation': {
         'primary': {'name': 'Emily Chen', 'role': 'Grid Integration Specialist', 'email': 'emily.c@windfarm.com', 'phone': '+1234567893'},
@@ -293,7 +327,7 @@ STAKEHOLDERS = {
         'primary': {'name': 'Aparajithaa', 'role': 'Yaw Systems Specialist', 'email': 'ts.aparajithaa@gmail.com', 'phone': '+919284743112'},
         'secondary': {'name': 'Amanda White', 'role': 'Hydraulic Engineer', 'email': 'amanda.w@windfarm.com', 'phone': '+1234567911'},
         'management': {'name': 'Mike Davis', 'role': 'Engineering Manager', 'email': 'mike.d@windfarm.com', 'phone': '+1234567892'},
-        'escalation_time': 480  # 8 hours
+        'escalation_time': 480
     },
     'Pitch System Hydraulic Fault': {
         'primary': {'name': 'Diego Lopez', 'role': 'Pitch System Engineer', 'email': 'diego.l@windfarm.com', 'phone': '+1234567912'},
@@ -361,7 +395,6 @@ STAKEHOLDERS = {
         'management': {'name': 'Lisa Anderson', 'role': 'Operations Manager', 'email': 'lisa.a@windfarm.com', 'phone': '+1234567895'},
         'escalation_time': 480
     },
-    # Default for alarms without specific stakeholders
     'DEFAULT': {
         'primary': {'name': 'Operations Center', 'role': 'Control Room', 'email': 'ops@windfarm.com', 'phone': '+1234567800'},
         'secondary': {'name': 'Duty Engineer', 'role': 'On-call Engineer', 'email': 'duty@windfarm.com', 'phone': '+1234567801'},
@@ -380,9 +413,8 @@ def send_email_notification(recipient_email, recipient_name, alarm_type, turbine
         msg['To'] = recipient_email
         msg['Subject'] = f"🚨 {severity} ALARM: {alarm_type} - Turbine {turbine_id}"
 
-        # Get dashboard URL for acknowledge button
         dashboard_url = get_dashboard_url()
-        ack_url = f"{dashboard_url}?ack={alarm_id}"
+        ack_url = f"http://localhost:8501/Realtime?ack={alarm_id}"
 
         body = f"""
         <html>
@@ -413,8 +445,7 @@ def send_email_notification(recipient_email, recipient_name, alarm_type, turbine
                 <hr style="border: 1px solid #ddd; margin: 20px 0;">
                 <p style="color: #888; font-size: 12px;">
                     This is an automated alert from WindSense AI Alarm Management System.<br>
-                    If you have acknowledged this alarm, please disregard this message.<br>
-                    <em>Note: Acknowledge link is valid for current session only.</em>
+                    If you have already acknowledged this alarm, please disregard this message.
                 </p>
             </div>
         </body>
@@ -422,7 +453,6 @@ def send_email_notification(recipient_email, recipient_name, alarm_type, turbine
         """
         msg.attach(MIMEText(body, 'html'))
 
-        # REAL Gmail SMTP
         _smtp = smtplib.SMTP('smtp.gmail.com', 587)
         _smtp.ehlo()
         _smtp.starttls()
@@ -430,7 +460,6 @@ def send_email_notification(recipient_email, recipient_name, alarm_type, turbine
         _smtp.sendmail('windsenseada@gmail.com', recipient_email, msg.as_string())
         _smtp.quit()
 
-        # Log the notification
         if 'notification_log' not in st.session_state:
             st.session_state.notification_log = []
 
@@ -451,18 +480,6 @@ def send_email_notification(recipient_email, recipient_name, alarm_type, turbine
 def send_sms_notification(phone_number, recipient_name, alarm_type, turbine_id, severity, alarm_id):
     """Send SMS notification to stakeholder"""
     try:
-        message_body = f"🚨 {severity} ALARM\nType: {alarm_type}\nTurbine: T-{turbine_id}\nID: {alarm_id}\nAcknowledge in dashboard immediately."
-
-        # NOTE: Configure Twilio credentials for production
-        # from twilio.rest import Client
-        # client = Client("ACCOUNT_SID", "AUTH_TOKEN")
-        # message = client.messages.create(
-        #     body=message_body,
-        #     from_="+1234567890",
-        #     to=phone_number
-        # )
-
-        # For demo purposes, log the notification
         if 'notification_log' not in st.session_state:
             st.session_state.notification_log = []
 
@@ -482,11 +499,9 @@ def send_sms_notification(phone_number, recipient_name, alarm_type, turbine_id, 
 def process_critical_alarm(alarm_type, turbine_id, alarm_id, severity='CRITICAL'):
     """Process critical alarm and send notifications to stakeholders"""
 
-    # Initialize active alarms tracking
     if 'active_critical_alarms' not in st.session_state:
         st.session_state.active_critical_alarms = {}
 
-    # Store in active alarms
     st.session_state.active_critical_alarms[alarm_id] = {
         'type': alarm_type,
         'turbine_id': turbine_id,
@@ -495,41 +510,17 @@ def process_critical_alarm(alarm_type, turbine_id, alarm_id, severity='CRITICAL'
         'notified': []
     }
 
-    # Get stakeholders for this alarm type
     stakeholder_info = STAKEHOLDERS.get(alarm_type, STAKEHOLDERS.get('DEFAULT', {}))
 
-    # Send to primary stakeholder (Email + SMS)
     primary = stakeholder_info.get('primary', {})
     if primary:
-        send_email_notification(
-            primary['email'],
-            primary['name'],
-            alarm_type,
-            turbine_id,
-            severity,
-            alarm_id
-        )
-        send_sms_notification(
-            primary['phone'],
-            primary['name'],
-            alarm_type,
-            turbine_id,
-            severity,
-            alarm_id
-        )
+        send_email_notification(primary['email'], primary['name'], alarm_type, turbine_id, severity, alarm_id)
+        send_sms_notification(primary['phone'], primary['name'], alarm_type, turbine_id, severity, alarm_id)
         st.session_state.active_critical_alarms[alarm_id]['notified'].append(f"Primary: {primary['name']}")
 
-    # Send to secondary stakeholder (Email only)
     secondary = stakeholder_info.get('secondary', {})
     if secondary:
-        send_email_notification(
-            secondary['email'],
-            secondary['name'],
-            alarm_type,
-            turbine_id,
-            severity,
-            alarm_id
-        )
+        send_email_notification(secondary['email'], secondary['name'], alarm_type, turbine_id, severity, alarm_id)
         st.session_state.active_critical_alarms[alarm_id]['notified'].append(f"Secondary: {secondary['name']}")
 
     return alarm_id
@@ -545,38 +536,20 @@ def check_and_escalate():
         st.session_state.escalated_alarms = {}
 
     for alarm_id, alarm_data in st.session_state.active_critical_alarms.items():
-        # Check if alarm is acknowledged
         if alarm_id not in st.session_state.acknowledged_alarms:
             alarm_time = alarm_data['timestamp']
             alarm_type = alarm_data['type']
 
-            # Get stakeholders for this alarm type
             stakeholder_info = STAKEHOLDERS.get(alarm_type, STAKEHOLDERS.get('DEFAULT', {}))
             escalation_time = stakeholder_info.get('escalation_time', 30)
 
-            time_elapsed = (current_time - alarm_time).total_seconds() / 60  # minutes
+            time_elapsed = (current_time - alarm_time).total_seconds() / 60
 
-            # Escalate if time exceeded and not already escalated
             if time_elapsed > escalation_time and alarm_id not in st.session_state.escalated_alarms:
-                # Send to management
                 mgmt = stakeholder_info.get('management', {})
                 if mgmt:
-                    send_email_notification(
-                        mgmt['email'],
-                        mgmt['name'],
-                        alarm_type,
-                        alarm_data['turbine_id'],
-                        'CRITICAL - ESCALATED',
-                        alarm_id
-                    )
-                    send_sms_notification(
-                        mgmt['phone'],
-                        mgmt['name'],
-                        alarm_type,
-                        alarm_data['turbine_id'],
-                        'CRITICAL - ESCALATED',
-                        alarm_id
-                    )
+                    send_email_notification(mgmt['email'], mgmt['name'], alarm_type, alarm_data['turbine_id'], 'CRITICAL - ESCALATED', alarm_id)
+                    send_sms_notification(mgmt['phone'], mgmt['name'], alarm_type, alarm_data['turbine_id'], 'CRITICAL - ESCALATED', alarm_id)
 
                     st.session_state.escalated_alarms[alarm_id] = {
                         'escalation_time': current_time,
@@ -592,12 +565,10 @@ def check_and_escalate():
 def load_historical_data():
     """Load all historical data"""
     try:
-        # Load main datasets
         historical_alarms = pd.read_csv(DATA_PATH + 'top_50_unique_detailed_alarms.csv')
         alarm_episodes = pd.read_csv(DATA_PATH + 'alarm_episodes_with_faults.csv')
         detailed_episodes = pd.read_csv(DATA_PATH + 'detailed_classified_alarm_episodes.csv')
 
-        # Load DMAIC data
         dmaic_file = DATA_PATH + 'DMAIC_Analysis_19_Alarms.csv'
         if os.path.exists(dmaic_file):
             dmaic_data = pd.read_csv(dmaic_file)
@@ -632,9 +603,7 @@ def load_simulation_data():
         return sim_data
     except Exception as e:
         st.warning("Simulation data not found. Generating sample data...")
-        # Generate sample data
-        sample_data = generate_sample_alarms(50)
-        return sample_data
+        return generate_sample_alarms(50)
 
 def generate_sample_alarms(n=50):
     """Generate sample alarm data for demo"""
@@ -655,7 +624,6 @@ def generate_sample_alarms(n=50):
 
     return pd.DataFrame(data)
 
-# Load all data
 historical_alarms, alarm_episodes, detailed_episodes, dmaic_data = load_historical_data()
 ml_model, feature_names, model_metadata = load_ml_model()
 simulation_data = load_simulation_data()
@@ -716,7 +684,6 @@ class RealtimeAlarmSimulator:
 
         return alarm
 
-# Initialize simulator
 if 'simulator' not in st.session_state:
     st.session_state.simulator = RealtimeAlarmSimulator()
 if 'alarm_buffer' not in st.session_state:
@@ -725,22 +692,23 @@ if 'notifications' not in st.session_state:
     st.session_state.notifications = []
 if 'acknowledged_alarms' not in st.session_state:
     st.session_state.acknowledged_alarms = load_acknowledgments()
+
 def clean_orphaned_acknowledgments():
-    """Remove acknowledgments for alarms no longer in the buffer"""
+    """Remove acknowledgments for alarms no longer in the buffer, but always keep email acks"""
     if 'alarm_buffer' in st.session_state and 'acknowledged_alarms' in st.session_state:
         active_alarm_ids = {a['alarm_id'] for a in st.session_state.alarm_buffer}
 
-        # Keep only acknowledgments for active alarms
-        cleaned_acks = {
-            aid: ack_data
-            for aid, ack_data in st.session_state.acknowledged_alarms.items()
-            if aid in active_alarm_ids or ack_data.get('method') == 'email_link'
-        }
+        cleaned_acks = {}
+        for aid, ack_data in st.session_state.acknowledged_alarms.items():
+            # Always keep email acks regardless of buffer
+            if ack_data.get('method') == 'email_link':
+                cleaned_acks[aid] = ack_data
+            # Keep dashboard acks only if alarm is still in buffer
+            elif aid in active_alarm_ids:
+                cleaned_acks[aid] = ack_data
 
-        # Update session state
         st.session_state.acknowledged_alarms = cleaned_acks
 
-        # Save to file
         try:
             with open(ACK_FILE, 'w') as f:
                 json.dump(cleaned_acks, f, indent=2)
@@ -751,7 +719,6 @@ def clean_orphaned_acknowledgments():
 # ROOT CAUSE ANALYSIS ENGINE
 # ═══════════════════════════════════════════════════════════════════
 
-# Fallback elimination strategies for alarms not in DMAIC JSON
 FALLBACK_ELIMINATION_STRATEGIES = {
     'Main Controller Fault': [
         'Update controller firmware to latest stable version',
@@ -870,22 +837,14 @@ FALLBACK_ELIMINATION_STRATEGIES = {
 }
 
 def get_elimination_strategy(alarm_type):
-    """
-    Get elimination strategy (recommended actions) for an alarm type.
-    Uses improve.solutions from dmaic_complete_database.json if available,
-    otherwise falls back to FALLBACK_ELIMINATION_STRATEGIES.
-    """
-    # Try to get from DMAIC database first
     if alarm_type in DMAIC_DATABASE:
         solutions = DMAIC_DATABASE[alarm_type].get('improve', {}).get('solutions', [])
         if solutions:
             return solutions
 
-    # Fall back to hardcoded strategies
     if alarm_type in FALLBACK_ELIMINATION_STRATEGIES:
         return FALLBACK_ELIMINATION_STRATEGIES[alarm_type]
 
-    # Generic fallback
     return [
         'Perform diagnostic inspection of affected system',
         'Review recent maintenance and operational logs',
@@ -895,13 +854,7 @@ def get_elimination_strategy(alarm_type):
 
 
 class RootCauseEngine:
-    """
-    Intelligent Root Cause Analysis Engine
-    Analyzes alarm patterns and sensor data to identify root causes
-    """
-
     def __init__(self):
-        # Build root cause database from DMAIC_DATABASE
         self.root_cause_database = {}
 
         if DMAIC_DATABASE:
@@ -913,7 +866,6 @@ class RootCauseEngine:
                     'threshold_conditions': {}
                 }
         else:
-            # Fallback hardcoded database if JSON not found
             self.root_cause_database = {
                 'Main Controller Fault': {
                     'primary_cause': 'Software instability during grid fluctuations',
@@ -938,9 +890,7 @@ class RootCauseEngine:
             }
 
     def analyze(self, alarm_type, sensor_data):
-        """Analyze alarm and return root cause with elimination strategy"""
         if alarm_type not in self.root_cause_database:
-            # Even for unknown alarms, return elimination strategy
             return {
                 'alarm_type': alarm_type,
                 'primary_cause': 'Diagnostic analysis in progress - sensor patterns being evaluated',
@@ -952,7 +902,6 @@ class RootCauseEngine:
 
         rca_data = self.root_cause_database[alarm_type]
 
-        # Analyze sensor patterns
         sensor_anomalies = []
         for sensor in rca_data['diagnostic_sensors']:
             if sensor in sensor_data:
@@ -962,10 +911,7 @@ class RootCauseEngine:
                 elif 'power' in sensor.lower() and value < 100:
                     sensor_anomalies.append(f"{sensor}: {value:.1f}W (LOW)")
 
-        # Calculate confidence
         confidence = min(95, 70 + len(sensor_anomalies) * 10)
-
-        # Get recommended actions from DMAIC improve solutions / elimination strategy
         recommended_actions = get_elimination_strategy(alarm_type)
 
         return {
@@ -977,7 +923,6 @@ class RootCauseEngine:
             'recommended_actions': recommended_actions
         }
 
-# Initialize Root Cause Engine
 if 'rca_engine' not in st.session_state:
     st.session_state.rca_engine = RootCauseEngine()
 
@@ -986,9 +931,7 @@ if 'rca_engine' not in st.session_state:
 # ═══════════════════════════════════════════════════════════════════
 
 def predict_alarm_type(alarm_data, model, features):
-    """Predict alarm type using ML model"""
     if model is None:
-        # Fallback classification
         status = alarm_data['status_type_id']
         if status == 5.0:
             return 'Grid Frequency Deviation', 92.5
@@ -997,10 +940,7 @@ def predict_alarm_type(alarm_data, model, features):
         else:
             return 'Hydraulic System Fault', 85.7
 
-    # Prepare features
     X = alarm_data[features].values.reshape(1, -1)
-
-    # Predict
     prediction = model.predict(X)[0]
     probabilities = model.predict_proba(X)[0]
     confidence = max(probabilities) * 100
@@ -1008,13 +948,10 @@ def predict_alarm_type(alarm_data, model, features):
     return prediction, confidence
 
 # ═══════════════════════════════════════════════════════════════════
-# NOTIFICATION SYSTEM (Legacy compatibility wrapper)
+# NOTIFICATION SYSTEM
 # ═══════════════════════════════════════════════════════════════════
 
 def send_notification(alarm):
-    """Send notification to appropriate stakeholders (Updated with Email/SMS)"""
-
-    # Department mapping for display
     dept_mapping = {
         'Main Controller Fault': 'Software & Controls',
         'Grid Frequency Deviation': 'Grid Operations',
@@ -1028,11 +965,9 @@ def send_notification(alarm):
 
     department = dept_mapping.get(alarm['predicted_type'], 'General Maintenance')
 
-    # Get stakeholder info
     stakeholder_info = STAKEHOLDERS.get(alarm['predicted_type'], STAKEHOLDERS.get('DEFAULT', {}))
     primary = stakeholder_info.get('primary', {})
 
-    # Create notification for display
     notification = {
         'timestamp': alarm['timestamp'],
         'alarm_id': alarm['alarm_id'],
@@ -1047,18 +982,11 @@ def send_notification(alarm):
 
     st.session_state.notifications.insert(0, notification)
 
-    # Keep only last 50 notifications
     if len(st.session_state.notifications) > 50:
         st.session_state.notifications = st.session_state.notifications[:50]
 
-    # Send actual Email/SMS notifications for CRITICAL alarms
     if alarm['priority'] == 'CRITICAL':
-        process_critical_alarm(
-            alarm['predicted_type'],
-            alarm['asset_id'],
-            alarm['alarm_id'],
-            alarm['priority']
-        )
+        process_critical_alarm(alarm['predicted_type'], alarm['asset_id'], alarm['alarm_id'], alarm['priority'])
 
     return notification
 
@@ -1073,7 +1001,6 @@ with st.sidebar:
 
     st.divider()
 
-      # System Status
     st.subheader("📊 System Status")
     col1, col2 = st.columns(2)
     with col1:
@@ -1083,8 +1010,6 @@ with st.sidebar:
 
     st.divider()
 
-
-    # Real-time Simulation Control
     st.subheader("⚡ Live Simulation")
 
     if st.button("🔄 Generate New Alarm", use_container_width=True):
@@ -1102,7 +1027,6 @@ with st.sidebar:
         send_notification(new_alarm)
         st.rerun()
 
-    # Show alarm count
     st.metric("Alarms Generated", len(st.session_state.alarm_buffer))
 
     if st.button("🗑️ Clear Buffer", use_container_width=True):
@@ -1131,7 +1055,6 @@ tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
 with tab1:
     st.markdown('<div class="main-header">📡 Real-Time Alarm Monitoring</div>', unsafe_allow_html=True)
 
-    # Key Metrics
     col1, col2, col3, col4 = st.columns(4)
 
     with col1:
@@ -1152,11 +1075,9 @@ with tab1:
 
     st.divider()
 
-    # Live Alarm Stream
     st.subheader("🔴 LIVE ALARM STREAM")
 
     if st.session_state.alarm_buffer:
-        # Display latest 10 alarms
         latest_alarms = st.session_state.alarm_buffer[:10]
 
         for alarm in latest_alarms:
@@ -1173,28 +1094,52 @@ with tab1:
             </div>
             """, unsafe_allow_html=True)
 
-        # Detailed table
         st.subheader("📋 Detailed Alarm Data")
         alarm_df = pd.DataFrame(st.session_state.alarm_buffer)
-        st.dataframe(
-            alarm_df[['alarm_id', 'timestamp', 'asset_id', 'predicted_type', 'confidence', 'priority']],
-            use_container_width=True,
-            height=400
-        )
 
-        # Download button
-        csv = alarm_df.to_csv(index=False).encode('utf-8')
-        st.download_button(
-            "📥 Download Alarm Log (CSV)",
-            csv,
-            "windsense_alarm_log.csv",
-            "text/csv",
-            use_container_width=True
-        )
+        # Build display dataframe with confidence flagging
+        display_rows = []
+        uncertain_count = 0
+
+        for _, row in alarm_df.iterrows():
+            conf = row.get('confidence', 0)
+            pred = row.get('predicted_type', 'Unknown')
+
+            if conf < 70:
+                flagged_type = "⚠️ UNCERTAIN — Manual Review Required"
+                flag_status = "🟡 Low Confidence"
+                uncertain_count += 1
+            elif conf < 85:
+                flagged_type = pred
+                flag_status = "🟠 Moderate Confidence"
+            else:
+                flagged_type = pred
+                flag_status = "🟢 High Confidence"
+
+            display_rows.append({
+                'Alarm ID': row.get('alarm_id', 'N/A'),
+                'Timestamp': row.get('timestamp', 'N/A'),
+                'Turbine': f"T-{row.get('asset_id', 'N/A')}",
+                'Priority': row.get('priority', 'N/A'),
+                'Alarm Classification': flagged_type,
+                'Confidence (%)': f"{conf:.1f}%",
+                'Confidence Flag': flag_status
+            })
+
+        display_df = pd.DataFrame(display_rows)
+        st.dataframe(display_df, use_container_width=True, height=400)
+
+        if uncertain_count > 0:
+            st.warning(
+                f"⚠️ {uncertain_count} alarm(s) flagged as uncertain (confidence <70%). "
+                f"These require manual inspection — the AI model cannot classify them reliably."
+            )
+
+        csv = display_df.to_csv(index=False).encode('utf-8')
+        st.download_button("📥 Download Alarm Log (CSV)", csv, "windsense_alarm_log.csv", "text/csv", use_container_width=True)
     else:
         st.info("👈 Click 'Generate New Alarm' in the sidebar to start real-time monitoring")
 
-    # Visualizations
     if st.session_state.alarm_buffer:
         st.divider()
 
@@ -1203,44 +1148,28 @@ with tab1:
         with col1:
             st.subheader("📊 Alarms by Type")
             type_counts = pd.DataFrame(st.session_state.alarm_buffer)['predicted_type'].value_counts()
-            fig = px.bar(
-                x=type_counts.index,
-                y=type_counts.values,
-                labels={'x': 'Alarm Type', 'y': 'Count'},
-                color=type_counts.values,
-                color_continuous_scale='Reds'
-            )
+            fig = px.bar(x=type_counts.index, y=type_counts.values, labels={'x': 'Alarm Type', 'y': 'Count'}, color=type_counts.values, color_continuous_scale='Reds')
             fig.update_layout(height=400, showlegend=False)
             st.plotly_chart(fig, use_container_width=True)
 
         with col2:
             st.subheader("🌀 Alarms by Turbine")
             turbine_counts = pd.DataFrame(st.session_state.alarm_buffer)['asset_id'].value_counts()
-            fig = px.pie(
-                values=turbine_counts.values,
-                names=[f"T-{tid}" for tid in turbine_counts.index],
-                hole=0.4
-            )
+            fig = px.pie(values=turbine_counts.values, names=[f"T-{tid}" for tid in turbine_counts.index], hole=0.4)
             fig.update_layout(height=400)
             st.plotly_chart(fig, use_container_width=True)
 
-        # Root Cause Analysis Display
         st.divider()
         st.subheader("🔍 Root Cause Analysis - Latest Alarm")
         if st.session_state.alarm_buffer:
             latest_alarm = st.session_state.alarm_buffer[0]
-            sensor_data = {k: v for k, v in latest_alarm.items()
-                          if 'sensor' in k or 'power' in k or 'wind' in k}
+            sensor_data = {k: v for k, v in latest_alarm.items() if 'sensor' in k or 'power' in k or 'wind' in k}
 
-            rca_result = st.session_state.rca_engine.analyze(
-                latest_alarm['predicted_type'],
-                sensor_data
-            )
+            rca_result = st.session_state.rca_engine.analyze(latest_alarm['predicted_type'], sensor_data)
 
             st.write(f"**🔍 Root Cause:** {rca_result['primary_cause']}")
             st.write(f"**Confidence:** {rca_result['confidence']}%")
 
-            # Always show recommended actions (elimination strategy) - never blank
             st.write("**Recommended Actions (Elimination Strategy):**")
             for action in rca_result['recommended_actions']:
                 st.write(f"  ✓ {action}")
@@ -1252,18 +1181,14 @@ with tab1:
 with tab2:
     st.markdown('<div class="main-header">🤖 Machine Learning Classification Engine</div>', unsafe_allow_html=True)
 
-    # Model Info - Updated metrics
     col1, col2, col3, col4 = st.columns(4)
 
     with col1:
         st.metric("Classification Accuracy", "94.8%", "↑ 2.5% vs baseline")
-
     with col2:
         st.metric("Training Samples", "40,000", "From 10 years")
-
     with col3:
         st.metric("Alarm Classes", "19", "Verified types")
-
     with col4:
         st.metric("Features Used", "11", "Key sensors")
 
@@ -1288,74 +1213,33 @@ with tab2:
         st.write("- F1-Score: 94.9%")
 
     with col2:
-        # Feature importance chart
         if ml_model and feature_names:
             st.subheader("🔍 Top 10 Feature Importance")
-
             importances = ml_model.feature_importances_
-            feature_imp_df = pd.DataFrame({
-                'Feature': feature_names,
-                'Importance': importances
-            }).sort_values('Importance', ascending=False).head(10)
-
-            fig = px.bar(
-                feature_imp_df,
-                x='Importance',
-                y='Feature',
-                orientation='h',
-                color='Importance',
-                color_continuous_scale='Blues',
-                title='Sensor Contribution to Classification'
-            )
+            feature_imp_df = pd.DataFrame({'Feature': feature_names, 'Importance': importances}).sort_values('Importance', ascending=False).head(10)
+            fig = px.bar(feature_imp_df, x='Importance', y='Feature', orientation='h', color='Importance', color_continuous_scale='Blues', title='Sensor Contribution to Classification')
             fig.update_layout(height=400)
             st.plotly_chart(fig, use_container_width=True)
         else:
-            # Create demo chart if model not loaded
             st.subheader("🔍 Feature Importance")
-            feature_names_demo = [
-                'Generator RPM', 'Grid Power', 'Transformer Temp',
-                'Gearbox Temp', 'Wind Speed', 'Blade Pitch',
-                'Hydraulic Press', 'Grid Voltage', 'Grid Frequency',
-                'Bearing Temp'
-            ]
+            feature_names_demo = ['Generator RPM', 'Grid Power', 'Transformer Temp', 'Gearbox Temp', 'Wind Speed', 'Blade Pitch', 'Hydraulic Press', 'Grid Voltage', 'Grid Frequency', 'Bearing Temp']
             importance_demo = [0.18, 0.15, 0.13, 0.11, 0.09, 0.08, 0.07, 0.06, 0.05, 0.04]
 
-            fig = px.bar(
-                x=importance_demo[::-1],
-                y=feature_names_demo[::-1],
-                orientation='h',
-                title='Sensor Contribution to Classification',
-                labels={'x': 'Importance Score', 'y': 'Sensor'},
-                color=importance_demo[::-1],
-                color_continuous_scale='Blues'
-            )
+            fig = px.bar(x=importance_demo[::-1], y=feature_names_demo[::-1], orientation='h', title='Sensor Contribution to Classification', labels={'x': 'Importance Score', 'y': 'Sensor'}, color=importance_demo[::-1], color_continuous_scale='Blues')
             fig.update_layout(height=400)
             st.plotly_chart(fig, use_container_width=True)
 
     st.markdown("---")
 
-    # Alarm Classes
     st.subheader("🎯 Trained Alarm Classes (19 Types)")
 
     alarm_classes = [
-        'Main Controller Fault',
-        'Extended Grid Outage',
-        'Grid Frequency Deviation',
-        'Momentary Grid Loss',
-        'Grid Voltage Fluctuation',
-        'Emergency Brake Activation',
-        'Safety System Activation',
-        'Overspeed Protection Triggered',
-        'Yaw System Hydraulic Fault',
-        'Pitch System Hydraulic Fault',
-        'Hydraulic Oil Contamination',
-        'Converter Circuit Fault',
-        'Generator Bearing Overheating',
-        'Power Electronics Failure',
-        'Transformer Oil Temperature High',
-        'Hydraulic Filter Clogged',
-        'Generator Winding Temperature High',
-        'Hydraulic Pressure Drop',
+        'Main Controller Fault', 'Extended Grid Outage', 'Grid Frequency Deviation',
+        'Momentary Grid Loss', 'Grid Voltage Fluctuation', 'Emergency Brake Activation',
+        'Safety System Activation', 'Overspeed Protection Triggered', 'Yaw System Hydraulic Fault',
+        'Pitch System Hydraulic Fault', 'Hydraulic Oil Contamination', 'Converter Circuit Fault',
+        'Generator Bearing Overheating', 'Power Electronics Failure', 'Transformer Oil Temperature High',
+        'Hydraulic Filter Clogged', 'Generator Winding Temperature High', 'Hydraulic Pressure Drop',
         'Hydraulic Valve Response Slow'
     ]
 
@@ -1378,30 +1262,23 @@ with tab3:
 
     if historical_alarms is not None:
         try:
-            # Summary metrics
             col1, col2, col3, col4 = st.columns(4)
 
             with col1:
                 st.metric("Total Episodes", "15,517")
-
             with col2:
                 st.metric("Total Downtime", "45,110 hrs")
-
             with col3:
                 st.metric("Alarm Types", "19")
-
             with col4:
                 st.metric("Departments", "11")
 
             st.divider()
 
-            # Top Alarms Table
             st.subheader("🏆 Top Critical Alarms (Ranked by Impact)")
 
-            # Check which columns exist and adapt
             available_cols = historical_alarms.columns.tolist()
 
-            # Try different possible column name variations
             col_mapping = {
                 'Rank': ['Rank', 'rank', 'index'],
                 'Alarm_Type': ['Alarm_Type', 'alarm_type', 'Alarm Type', 'type'],
@@ -1410,7 +1287,6 @@ with tab3:
                 'Department': ['Department', 'department', 'dept']
             }
 
-            # Find the actual column names
             display_cols = []
             col_names = []
             for target_col, variations in col_mapping.items():
@@ -1425,7 +1301,6 @@ with tab3:
                 display_df.columns = col_names
                 st.dataframe(display_df, use_container_width=True, height=600)
             else:
-                # If columns don't match, just display the whole dataframe
                 st.dataframe(historical_alarms, use_container_width=True, height=600)
 
             st.divider()
@@ -1443,10 +1318,8 @@ with tab3:
 with tab4:
     st.markdown('<div class="main-header">🔔 Real-Time Notifications & Workflow</div>', unsafe_allow_html=True)
 
-    # Auto-check for escalations
     check_and_escalate()
 
-    # Workflow Diagram
     st.subheader("🔄 Alarm Resolution Workflow")
 
     workflow_steps = [
@@ -1476,7 +1349,6 @@ with tab4:
 
     st.divider()
 
-    # Notification Statistics
     st.subheader("📊 Notification Statistics")
 
     col1, col2, col3, col4 = st.columns(4)
@@ -1488,26 +1360,21 @@ with tab4:
     with col1:
         email_count = sum(1 for n in notification_log if n['type'] == 'EMAIL')
         st.metric("📧 Emails Sent", email_count)
-
     with col2:
         sms_count = sum(1 for n in notification_log if n['type'] == 'SMS')
         st.metric("📱 SMS Sent", sms_count)
-
     with col3:
         st.metric("🚨 Active Critical", len(active_alarms))
-
     with col4:
         st.metric("⚠️ Escalated", len(escalated), delta_color="inverse")
 
     st.divider()
 
-    # Email/SMS Notification Log
     st.subheader("📨 Email & SMS Notification Log")
 
     if notification_log:
-        # Create DataFrame for better display
         log_data = []
-        for notif in notification_log[-50:]:  # Last 50
+        for notif in notification_log[-50:]:
             log_data.append({
                 'Time': notif['time'].strftime('%Y-%m-%d %H:%M:%S'),
                 'Type': notif['type'],
@@ -1521,21 +1388,13 @@ with tab4:
             log_df = pd.DataFrame(log_data)
             st.dataframe(log_df, use_container_width=True, height=300)
 
-            # Download button
             csv = log_df.to_csv(index=False).encode('utf-8')
-            st.download_button(
-                "📥 Download Notification Log",
-                csv,
-                "notification_log.csv",
-                "text/csv",
-                use_container_width=True
-            )
+            st.download_button("📥 Download Notification Log", csv, "notification_log.csv", "text/csv", use_container_width=True)
     else:
         st.info("No email/SMS notifications sent yet. Critical alarms trigger automatic notifications.")
 
     st.divider()
 
-    # Escalation Status
     if escalated:
         st.subheader("⚠️ Escalated Alarms")
 
@@ -1555,7 +1414,6 @@ with tab4:
 
     st.divider()
 
-    # Alarm Notifications (Legacy display)
     st.subheader("📬 Recent Alarm Notifications")
 
     if st.session_state.notifications:
@@ -1569,7 +1427,6 @@ with tab4:
                 st.write(f"**Priority:** {notif['priority']}")
                 st.write(f"**Message:** {notif['message']}")
 
-                # Show who was notified
                 alarm_id = notif['alarm_id']
                 if alarm_id in active_alarms:
                     notified_list = active_alarms[alarm_id].get('notified', [])
@@ -1582,7 +1439,6 @@ with tab4:
 
     st.divider()
 
-    # Stakeholder Directory
     st.subheader("👥 Stakeholder Directory")
 
     st.info("📋 Primary stakeholders are automatically notified via Email + SMS for their assigned alarm types. Secondary stakeholders receive email copies. Management receives escalations if alarms are not acknowledged within the threshold time.")
@@ -1621,7 +1477,6 @@ with tab4:
                 st.write(f"**Phone:** {management.get('phone', 'N/A')}")
                 st.caption(f"Receives: Email + SMS (After {stakeholder_info.get('escalation_time', 30)} min)")
 
-    # Default contacts
     st.divider()
     st.subheader("🔧 Default Contacts (For unassigned alarms)")
 
@@ -1667,39 +1522,21 @@ with tab5:
 
     st.divider()
 
-    # Select alarm for DMAIC display
     alarm_classes = [
-        'Main Controller Fault',
-        'Extended Grid Outage',
-        'Grid Frequency Deviation',
-        'Momentary Grid Loss',
-        'Grid Voltage Fluctuation',
-        'Emergency Brake Activation',
-        'Safety System Activation',
-        'Overspeed Protection Triggered',
-        'Yaw System Hydraulic Fault',
-        'Pitch System Hydraulic Fault',
-        'Hydraulic Oil Contamination',
-        'Converter Circuit Fault',
-        'Generator Bearing Overheating',
-        'Power Electronics Failure',
-        'Transformer Oil Temperature High',
-        'Hydraulic Filter Clogged',
-        'Generator Winding Temperature High',
-        'Hydraulic Pressure Drop',
+        'Main Controller Fault', 'Extended Grid Outage', 'Grid Frequency Deviation',
+        'Momentary Grid Loss', 'Grid Voltage Fluctuation', 'Emergency Brake Activation',
+        'Safety System Activation', 'Overspeed Protection Triggered', 'Yaw System Hydraulic Fault',
+        'Pitch System Hydraulic Fault', 'Hydraulic Oil Contamination', 'Converter Circuit Fault',
+        'Generator Bearing Overheating', 'Power Electronics Failure', 'Transformer Oil Temperature High',
+        'Hydraulic Filter Clogged', 'Generator Winding Temperature High', 'Hydraulic Pressure Drop',
         'Hydraulic Valve Response Slow'
     ]
 
-    selected_alarm = st.selectbox(
-        "Select Alarm Type for Detailed DMAIC Analysis:",
-        alarm_classes
-    )
+    selected_alarm = st.selectbox("Select Alarm Type for Detailed DMAIC Analysis:", alarm_classes)
 
-    # Load DMAIC data from dmaic_complete_database.json for all 19 alarms
     if DMAIC_DATABASE and selected_alarm in DMAIC_DATABASE:
         dmaic = DMAIC_DATABASE[selected_alarm]
 
-        # Define
         st.subheader("📝 DEFINE")
         define_data = dmaic.get('define', {})
         st.write(f"**What:** {define_data.get('what', 'N/A')}")
@@ -1708,7 +1545,6 @@ with tab5:
 
         st.divider()
 
-        # Measure section - use st.write instead of st.metric to avoid truncation
         st.subheader("📏 MEASURE")
         measure_data = dmaic.get('measure', {})
 
@@ -1728,7 +1564,6 @@ with tab5:
 
         st.divider()
 
-        # Analyze
         st.subheader("🔍 ANALYZE")
         analyze_data = dmaic.get('analyze', {})
         st.write(f"**Root Cause:** {analyze_data.get('root_cause', 'N/A')}")
@@ -1740,7 +1575,6 @@ with tab5:
 
         st.divider()
 
-        # Improve
         st.subheader("⚙️ IMPROVE")
         improve_data = dmaic.get('improve', {})
         solutions = improve_data.get('solutions', [])
@@ -1754,7 +1588,6 @@ with tab5:
 
         st.divider()
 
-        # Control
         st.subheader("🎛️ CONTROL")
         control_data = dmaic.get('control', {})
         monitoring = control_data.get('monitoring', 'N/A')
@@ -1768,11 +1601,7 @@ with tab5:
         st.write(f"**Review Frequency:** {review}")
 
     else:
-        # If DMAIC_DATABASE not loaded yet (file path issue), show helpful message
-        st.warning(
-            f"⚠️ DMAIC database not loaded from file. "
-            f"Please ensure `dmaic_complete_database.json` exists at: `{DATA_PATH}dmaic_complete_database.json`"
-        )
+        st.warning(f"⚠️ DMAIC database not loaded. Please ensure `dmaic_complete_database.json` exists at: `{DATA_PATH}dmaic_complete_database.json`")
         st.info("Once the file is available, all 19 alarm types will display full DMAIC analysis automatically.")
 
 # ═══════════════════════════════════════════════════════════════════
@@ -1782,23 +1611,19 @@ with tab5:
 with tab6:
     st.markdown('<div class="main-header">🎯 Optimization & Predictive Forecasting</div>', unsafe_allow_html=True)
 
-    # LPF Optimization
     st.subheader("📈 Lost Production Factor (LPF) Optimization")
 
     col1, col2, col3 = st.columns(3)
 
     with col1:
         st.metric("Current LPF", "3.64%", delta="-1.36% from baseline")
-
     with col2:
         st.metric("Target LPF", "<2.0%", delta="Industry best practice")
-
     with col3:
         st.metric("Potential Savings", "₹24.9-41.5 Crore/year", delta="After full implementation")
 
     st.divider()
 
-    # LPF Breakdown
     st.subheader("🔍 LPF Breakdown by Category")
 
     lpf_data = pd.DataFrame({
@@ -1807,31 +1632,18 @@ with tab6:
         'Downtime_Hours': [28500, 3500, 2500, 1200, 700]
     })
 
-    fig = make_subplots(
-        rows=1, cols=2,
-        subplot_titles=('LPF Distribution', 'Downtime Distribution'),
-        specs=[[{'type': 'pie'}, {'type': 'bar'}]]
-    )
+    fig = make_subplots(rows=1, cols=2, subplot_titles=('LPF Distribution', 'Downtime Distribution'), specs=[[{'type': 'pie'}, {'type': 'bar'}]])
 
-    fig.add_trace(
-        go.Pie(labels=lpf_data['Category'], values=lpf_data['LPF_Percentage'], hole=0.4),
-        row=1, col=1
-    )
-
-    fig.add_trace(
-        go.Bar(x=lpf_data['Category'], y=lpf_data['Downtime_Hours'], marker_color='lightblue'),
-        row=1, col=2
-    )
+    fig.add_trace(go.Pie(labels=lpf_data['Category'], values=lpf_data['LPF_Percentage'], hole=0.4), row=1, col=1)
+    fig.add_trace(go.Bar(x=lpf_data['Category'], y=lpf_data['Downtime_Hours'], marker_color='lightblue'), row=1, col=2)
 
     fig.update_layout(height=400, showlegend=True)
     st.plotly_chart(fig, use_container_width=True)
 
     st.divider()
 
-    # Predictive Forecasting
     st.subheader("🔮 6-Month Alarm Forecast")
 
-    # Generate sample forecast data
     months = ['Month 1', 'Month 2', 'Month 3', 'Month 4', 'Month 5', 'Month 6']
     forecast_data = {
         'Month': months,
@@ -1843,43 +1655,15 @@ with tab6:
     forecast_df = pd.DataFrame(forecast_data)
 
     fig = go.Figure()
+    fig.add_trace(go.Scatter(x=forecast_df['Month'], y=forecast_df['Grid Alarms'], mode='lines+markers', name='Grid Alarms', line=dict(color='red', width=3)))
+    fig.add_trace(go.Scatter(x=forecast_df['Month'], y=forecast_df['Mechanical Alarms'], mode='lines+markers', name='Mechanical Alarms', line=dict(color='blue', width=3)))
+    fig.add_trace(go.Scatter(x=forecast_df['Month'], y=forecast_df['Electrical Alarms'], mode='lines+markers', name='Electrical Alarms', line=dict(color='green', width=3)))
 
-    fig.add_trace(go.Scatter(
-        x=forecast_df['Month'],
-        y=forecast_df['Grid Alarms'],
-        mode='lines+markers',
-        name='Grid Alarms',
-        line=dict(color='red', width=3)
-    ))
-
-    fig.add_trace(go.Scatter(
-        x=forecast_df['Month'],
-        y=forecast_df['Mechanical Alarms'],
-        mode='lines+markers',
-        name='Mechanical Alarms',
-        line=dict(color='blue', width=3)
-    ))
-
-    fig.add_trace(go.Scatter(
-        x=forecast_df['Month'],
-        y=forecast_df['Electrical Alarms'],
-        mode='lines+markers',
-        name='Electrical Alarms',
-        line=dict(color='green', width=3)
-    ))
-
-    fig.update_layout(
-        title="Predicted Alarm Trends (Next 6 Months)",
-        xaxis_title="Time Period",
-        yaxis_title="Number of Alarms",
-        height=500
-    )
-
+    fig.update_layout(title="Predicted Alarm Trends (Next 6 Months)", xaxis_title="Time Period", yaxis_title="Number of Alarms", height=500)
     st.plotly_chart(fig, use_container_width=True)
 
     st.divider()
 
-    # Implementation Roadmap - MATCHING SLIDE 10
     st.subheader("🗺️ 5-Phase Implementation Roadmap")
 
     phases = [
@@ -1895,10 +1679,7 @@ with tab6:
                 'Configure cloud storage (Google Cloud - 4 months)'
             ],
             'expected_lpf': 'Baseline established',
-            'key_milestones': [
-                'Week 1: Data warehouse deployment complete',
-                'Week 2: Historical data collection and validation done'
-            ]
+            'key_milestones': ['Week 1: Data warehouse deployment complete', 'Week 2: Historical data collection and validation done']
         },
         {
             'phase': 'Phase 2: AI Model Development & Training',
@@ -1912,12 +1693,7 @@ with tab6:
                 'Optimize model parameters using GPU training (Google Colab Pro+)'
             ],
             'expected_lpf': 'Model accuracy: ~88% (F1)',
-            'key_milestones': [
-                'Week 3: Random Forest classifier trained',
-                'Week 4: LSTM predictive model developed',
-                'Week 5: Root Cause Engine integrated',
-                'Week 6: Model validation and testing complete'
-            ]
+            'key_milestones': ['Week 3: Random Forest classifier trained', 'Week 4: LSTM predictive model developed', 'Week 5: Root Cause Engine integrated', 'Week 6: Model validation and testing complete']
         },
         {
             'phase': 'Phase 3: Backend & Frontend Development',
@@ -1931,11 +1707,7 @@ with tab6:
                 'Create smart team routing and assignment logic'
             ],
             'expected_lpf': 'Dashboard operational',
-            'key_milestones': [
-                'Week 7: REST API deployment',
-                'Week 8: Dashboard UI completed',
-                'Week 9: Notification system tested and live'
-            ]
+            'key_milestones': ['Week 7: REST API deployment', 'Week 8: Dashboard UI completed', 'Week 9: Notification system tested and live']
         },
         {
             'phase': 'Phase 4: Integration & Pilot Deployment',
@@ -1949,10 +1721,7 @@ with tab6:
                 'Field testing with mechanical, electrical, and software teams'
             ],
             'expected_lpf': 'Initial reduction: 10-15%',
-            'key_milestones': [
-                'Week 10: SCADA integration successful',
-                'Week 11: Pilot testing complete with positive results'
-            ]
+            'key_milestones': ['Week 10: SCADA integration successful', 'Week 11: Pilot testing complete with positive results']
         },
         {
             'phase': 'Phase 5: Validation & Full-Scale Rollout',
@@ -1966,11 +1735,7 @@ with tab6:
                 'Performance validation and optimization'
             ],
             'expected_lpf': 'Target: <2.5% LPF, ~35% reduction',
-            'key_milestones': [
-                'Week 12: KPI measurement and reporting',
-                'Week 13: Full team training completed',
-                'Week 14: System handover and go-live'
-            ]
+            'key_milestones': ['Week 12: KPI measurement and reporting', 'Week 13: Full team training completed', 'Week 14: System handover and go-live']
         }
     ]
 
@@ -1991,20 +1756,16 @@ with tab6:
 
     st.divider()
 
-    # ROI Calculation
     st.subheader("💰 Return on Investment (ROI)")
 
     col1, col2, col3, col4 = st.columns(4)
 
     with col1:
         st.metric("Total Pilot Cost", "₹51,500", delta="Student prototype")
-
     with col2:
         st.metric("Annual Savings", "₹50+ Lakh", delta="Per farm/year")
-
     with col3:
         st.metric("ROI Year 1", "900%+", delta="Industry-leading")
-
     with col4:
         st.metric("Payback Period", "~3 weeks", delta="Fast return")
 
@@ -2017,51 +1778,35 @@ with tab6:
 with tab7:
     st.markdown('<div class="main-header">🎛️ Alarm Acknowledgment & Management</div>', unsafe_allow_html=True)
 
-    # Clean up orphaned acknowledgments
     clean_orphaned_acknowledgments()
 
-    # Initialize acknowledgment tracking
     if 'acknowledged_alarms' not in st.session_state:
         st.session_state.acknowledged_alarms = {}
 
-    # Key metrics - Only show stats for active alarms
-
-    # Reload acknowledgments from file to ensure we have latest
     st.session_state.acknowledged_alarms = load_acknowledgments()
 
-    # Get count of active alarms (those in the buffer)
     total_alarms = len(st.session_state.alarm_buffer)
 
-    # Count acknowledged alarms that are IN the current alarm buffer
     active_alarm_ids = {a['alarm_id'] for a in st.session_state.alarm_buffer}
-    acknowledged_count = len([aid for aid in st.session_state.acknowledged_alarms.keys()
-                             if aid in active_alarm_ids])
+    acknowledged_count = len([aid for aid in st.session_state.acknowledged_alarms.keys() if aid in active_alarm_ids])
 
-    # Calculate pending based on active alarms only
     pending_count = max(0, total_alarms - acknowledged_count)
 
     col1, col2, col3, col4 = st.columns(4)
 
     with col1:
         st.metric("Total Alarms", total_alarms)
-
     with col2:
-        st.metric("✅ Acknowledged", acknowledged_count,
-                 delta=f"{(acknowledged_count/total_alarms*100) if total_alarms > 0 else 0:.1f}%")
-
+        st.metric("✅ Acknowledged", acknowledged_count, delta=f"{(acknowledged_count/total_alarms*100) if total_alarms > 0 else 0:.1f}%")
     with col3:
-        st.metric("⏳ Pending", pending_count,
-                 delta=f"-{pending_count} to clear", delta_color="inverse")
-
+        st.metric("⏳ Pending", pending_count, delta=f"-{pending_count} to clear", delta_color="inverse")
     with col4:
-        # Calculate average response time only for dashboard acks
-        dashboard_acks = [a for a in st.session_state.acknowledged_alarms.values()
-                         if 'response_time' in a]
+        dashboard_acks = [a for a in st.session_state.acknowledged_alarms.values() if 'response_time' in a]
         avg_response = np.mean([a['response_time'] for a in dashboard_acks]) if dashboard_acks else 0
         st.metric("Avg Response Time", f"{avg_response:.1f} min")
 
     st.divider()
-     # Refresh acknowledgments
+
     if st.button("🔄 Refresh Acknowledgments", use_container_width=True):
         st.session_state.acknowledged_alarms = load_acknowledgments()
         st.success("✅ Acknowledgments reloaded from storage")
@@ -2071,23 +1816,17 @@ with tab7:
 
     st.subheader("🚨 Active Alarms Requiring Acknowledgment")
 
-    # Active alarms requiring acknowledgment
-    st.subheader("🚨 Active Alarms Requiring Acknowledgment")
-
     if not st.session_state.alarm_buffer:
         st.info("✅ No active alarms. All systems operating normally!")
     else:
-        # Filter unacknowledged alarms
-        unack_alarms = [a for a in st.session_state.alarm_buffer
-                       if a['alarm_id'] not in st.session_state.acknowledged_alarms]
+        unack_alarms = [a for a in st.session_state.alarm_buffer if a['alarm_id'] not in st.session_state.acknowledged_alarms]
 
         if not unack_alarms:
             st.success("✅ All alarms have been acknowledged!")
         else:
             st.warning(f"⚠️ {len(unack_alarms)} alarms awaiting acknowledgment")
 
-            # Display each unacknowledged alarm
-            for alarm in unack_alarms[:10]:  # Show top 10
+            for alarm in unack_alarms[:10]:
                 priority_color = {
                     'CRITICAL': '#ff4444',
                     'HIGH': '#ff8800',
@@ -2095,14 +1834,12 @@ with tab7:
                 }[alarm['priority']]
 
                 with st.expander(
-                    f"🚨 {alarm['alarm_id']} - {alarm['predicted_type']} | "
-                    f"Turbine T-{alarm['asset_id']} | {alarm['timestamp']}",
+                    f"🚨 {alarm['alarm_id']} - {alarm['predicted_type']} | Turbine T-{alarm['asset_id']} | {alarm['timestamp']}",
                     expanded=True
                 ):
                     col_a, col_b = st.columns([2, 1])
 
                     with col_a:
-                        # Alarm details
                         st.markdown(f"""
                         <div style="background-color: {priority_color}; padding: 10px; border-radius: 5px; color: white;">
                             <strong>Priority:</strong> {alarm['priority']}<br>
@@ -2112,14 +1849,9 @@ with tab7:
                         </div>
                         """, unsafe_allow_html=True)
 
-                        # Root Cause Analysis
                         st.write("**🔍 Root Cause Analysis:**")
-                        sensor_data = {k: v for k, v in alarm.items()
-                                     if 'sensor' in k or 'power' in k or 'wind' in k}
-                        rca_result = st.session_state.rca_engine.analyze(
-                            alarm['predicted_type'],
-                            sensor_data
-                        )
+                        sensor_data = {k: v for k, v in alarm.items() if 'sensor' in k or 'power' in k or 'wind' in k}
+                        rca_result = st.session_state.rca_engine.analyze(alarm['predicted_type'], sensor_data)
 
                         st.write(f"**Primary Cause:** {rca_result['primary_cause']}")
                         st.write(f"**Confidence:** {rca_result['confidence']}%")
@@ -2135,29 +1867,14 @@ with tab7:
                                 st.write(f"  ✓ {action}")
 
                     with col_b:
-                        # Acknowledgment form
                         st.write("**Acknowledge Alarm:**")
 
-                        technician_name = st.text_input(
-                            "Technician Name",
-                            key=f"tech_{alarm['alarm_id']}"
-                        )
-
-                        action_taken = st.selectbox(
-                            "Action Taken",
-                            ["Investigating", "Repairing", "Monitoring", "Resolved", "Escalated"],
-                            key=f"action_{alarm['alarm_id']}"
-                        )
-
-                        notes = st.text_area(
-                            "Notes",
-                            key=f"notes_{alarm['alarm_id']}",
-                            height=100
-                        )
+                        technician_name = st.text_input("Technician Name", key=f"tech_{alarm['alarm_id']}")
+                        action_taken = st.selectbox("Action Taken", ["Investigating", "Repairing", "Monitoring", "Resolved", "Escalated"], key=f"action_{alarm['alarm_id']}")
+                        notes = st.text_area("Notes", key=f"notes_{alarm['alarm_id']}", height=100)
 
                         if st.button("✅ Acknowledge", key=f"ack_{alarm['alarm_id']}", type="primary"):
                             if technician_name:
-                                # Record acknowledgment
                                 ack_time = datetime.now()
                                 alarm_time = datetime.strptime(alarm['timestamp'], '%Y-%m-%d %H:%M:%S')
                                 response_time = (ack_time - alarm_time).total_seconds() / 60
@@ -2172,10 +1889,7 @@ with tab7:
                                     'method': 'dashboard'
                                 }
 
-                                # Save to persistent storage
                                 save_acknowledgment(alarm['alarm_id'], ack_data)
-
-                                # Update session state
                                 st.session_state.acknowledged_alarms[alarm['alarm_id']] = ack_data
 
                                 st.success(f"✅ Alarm {alarm['alarm_id']} acknowledged by {technician_name}")
@@ -2186,21 +1900,15 @@ with tab7:
 
     st.divider()
 
-    # Acknowledgment history
     st.subheader("📜 Acknowledgment History")
 
     if st.session_state.acknowledged_alarms:
-        # Create DataFrame
         ack_data = []
         for alarm_id, ack_info in st.session_state.acknowledged_alarms.items():
-            # Handle both email and dashboard acknowledgments
             alarm_data = ack_info.get('alarm_data', {})
-
-            # Determine acknowledgment method
             method = ack_info.get('method', 'unknown')
 
             if method == 'email_link':
-                # Email acknowledgment - better display
                 ack_data.append({
                     'Alarm ID': alarm_id,
                     'Type': 'Email Acknowledgment',
@@ -2212,7 +1920,6 @@ with tab7:
                     'Response Time (min)': 'N/A'
                 })
             else:
-                # Dashboard acknowledgment
                 ack_data.append({
                     'Alarm ID': alarm_id,
                     'Type': alarm_data.get('predicted_type', 'N/A'),
@@ -2227,19 +1934,10 @@ with tab7:
         ack_df = pd.DataFrame(ack_data)
         st.dataframe(ack_df, use_container_width=True, height=400)
 
-        # Download log
         csv = ack_df.to_csv(index=False).encode('utf-8')
-        st.download_button(
-            "📥 Download Acknowledgment Log",
-            csv,
-            "alarm_acknowledgments.csv",
-            "text/csv",
-            use_container_width=True
-        )
+        st.download_button("📥 Download Acknowledgment Log", csv, "alarm_acknowledgments.csv", "text/csv", use_container_width=True)
 
-        # Statistics (only for dashboard acknowledgments)
-        dashboard_acks = [a for a in st.session_state.acknowledged_alarms.values()
-                         if a.get('method') != 'email_link' and 'response_time' in a]
+        dashboard_acks = [a for a in st.session_state.acknowledged_alarms.values() if a.get('method') != 'email_link' and 'response_time' in a]
 
         if dashboard_acks:
             st.subheader("📊 Acknowledgment Statistics (Dashboard Only)")
@@ -2249,33 +1947,23 @@ with tab7:
             with col1:
                 avg_response = np.mean([a['response_time'] for a in dashboard_acks])
                 st.metric("Avg Response Time", f"{avg_response:.1f} min")
-
             with col2:
                 actions = [a.get('action_taken', 'N/A') for a in dashboard_acks]
                 by_action = pd.Series(actions).value_counts()
                 most_common = by_action.index[0] if len(by_action) > 0 else "N/A"
                 st.metric("Most Common Action", most_common)
-
             with col3:
                 techs = [a.get('technician', 'N/A') for a in dashboard_acks]
                 by_tech = pd.Series(techs).value_counts()
                 most_active = by_tech.index[0] if len(by_tech) > 0 else "N/A"
                 st.metric("Most Active Technician", most_active)
 
-            # Response time chart
             response_times = [a['response_time'] for a in dashboard_acks]
-            fig = px.histogram(
-                x=response_times,
-                nbins=20,
-                title='Response Time Distribution',
-                labels={'x': 'Response Time (min)', 'y': 'Count'}
-            )
+            fig = px.histogram(x=response_times, nbins=20, title='Response Time Distribution', labels={'x': 'Response Time (min)', 'y': 'Count'})
             fig.update_layout(height=300)
             st.plotly_chart(fig, use_container_width=True)
 
-        # Show email acknowledgments separately
-        email_acks = sum(1 for a in st.session_state.acknowledged_alarms.values()
-                        if a.get('method') == 'email_link')
+        email_acks = sum(1 for a in st.session_state.acknowledged_alarms.values() if a.get('method') == 'email_link')
         if email_acks > 0:
             st.info(f"📧 {email_acks} alarm(s) acknowledged via email link")
 
