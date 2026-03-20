@@ -1,1 +1,58 @@
-{}
+{
+  "ALM-00002": {
+    "time": "2026-03-20 14:59:25",
+    "method": "email_link",
+    "alarm_id": "ALM-00002"
+  },
+  "ALM-00004": {
+    "technician": "Aarif",
+    "ack_time": "2026-03-20 14:59:53",
+    "action_taken": "Resolved",
+    "notes": "",
+    "response_time": 0.29723140000000003,
+    "alarm_data": {
+      "alarm_id": "ALM-00004",
+      "timestamp": "2026-03-20 14:59:36",
+      "asset_id": 13,
+      "status_type_id": 4.0,
+      "sensor_11_avg": 45.818198184157566,
+      "sensor_12_avg": 74.00475355406104,
+      "sensor_13_avg": 66.2497988204012,
+      "sensor_41_avg": 63.93166409443864,
+      "power_30_avg": 1429.1856329148234,
+      "wind_speed_3_avg": 14.554837513533641,
+      "predicted_type": "Extended Grid Outage",
+      "confidence": 83.06084587925751,
+      "priority": "HIGH"
+    },
+    "method": "dashboard"
+  },
+  "ALM-00003": {
+    "technician": "Apara",
+    "ack_time": "2026-03-20 15:00:11",
+    "action_taken": "Resolved",
+    "notes": "",
+    "response_time": 0.6204720666666667,
+    "alarm_data": {
+      "alarm_id": "ALM-00003",
+      "timestamp": "2026-03-20 14:59:34",
+      "asset_id": 10,
+      "status_type_id": 3.0,
+      "sensor_11_avg": 42.710901447677244,
+      "sensor_12_avg": 42.397345522603594,
+      "sensor_13_avg": 50.40901548874959,
+      "sensor_41_avg": 43.51493448738631,
+      "power_30_avg": 975.9471021239796,
+      "wind_speed_3_avg": 5.736707511357383,
+      "predicted_type": "Pitch System Hydraulic Fault",
+      "confidence": 86.5008979561981,
+      "priority": "MEDIUM"
+    },
+    "method": "dashboard"
+  },
+  "ALM-00001": {
+    "time": "2026-03-20 15:00:28",
+    "method": "email_link",
+    "alarm_id": "ALM-00001"
+  }
+}
