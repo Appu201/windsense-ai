@@ -13,6 +13,7 @@ import random
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+from utils.email_queue import add_to_queue, flush_queue
 
 # ═══════════════════════════════════════════════════════════════════
 # PAGE CONFIGURATION
@@ -24,6 +25,12 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded"
 )
+
+st.markdown("""
+<style>
+[data-testid="stSidebarNav"] {display: none;}
+</style>
+""", unsafe_allow_html=True)
 
 
 # Custom CSS
@@ -257,6 +264,9 @@ else:
     # Refresh within same session — preserve acks
     st.session_state.acknowledged_alarms = load_acknowledgments()
 
+# Flush any queued emails on every page interaction
+flush_queue()
+
 # ═══════════════════════════════════════════════════════════════════
 # LOAD DMAIC DATABASE (used by both RCA Engine and DMAIC Tab)
 # ═══════════════════════════════════════════════════════════════════
@@ -453,29 +463,47 @@ def send_email_notification(recipient_email, recipient_name, alarm_type, turbine
         """
         msg.attach(MIMEText(body, 'html'))
 
-        _smtp = smtplib.SMTP('smtp.gmail.com', 587)
-        _smtp.ehlo()
-        _smtp.starttls()
-        _smtp.login('windsenseada@gmail.com', 'oaru xyta qlwi hpmw')
-        _smtp.sendmail('windsenseada@gmail.com', recipient_email, msg.as_string())
-        _smtp.quit()
+        try:
+            _smtp = smtplib.SMTP('smtp.gmail.com', 587, timeout=5)
+            _smtp.ehlo()
+            _smtp.starttls()
+            _smtp.login('windsenseada@gmail.com', 'oaru xyta qlwi hpmw')
+            _smtp.sendmail('windsenseada@gmail.com', recipient_email, msg.as_string())
+            _smtp.quit()
 
-        if 'notification_log' not in st.session_state:
-            st.session_state.notification_log = []
+            if 'notification_log' not in st.session_state:
+                st.session_state.notification_log = []
+            st.session_state.notification_log.append({
+                'time': datetime.now(),
+                'type': 'EMAIL',
+                'recipient': f"{recipient_name} ({recipient_email})",
+                'alarm_id': alarm_id,
+                'alarm_type': alarm_type,
+                'status': 'SENT ✓'
+            })
+            return True
 
-        st.session_state.notification_log.append({
-            'time': datetime.now(),
-            'type': 'EMAIL',
-            'recipient': f"{recipient_name} ({recipient_email})",
-            'alarm_id': alarm_id,
-            'alarm_type': alarm_type,
-            'status': 'SENT ✓'
-        })
+        except Exception as smtp_err:
+            print(f"[EMAIL] Offline — queuing for retry: {smtp_err}")
+            add_to_queue(recipient_email, recipient_name,
+                        msg['Subject'], body, alarm_id)
 
-        return True
+            if 'notification_log' not in st.session_state:
+                st.session_state.notification_log = []
+            st.session_state.notification_log.append({
+                'time': datetime.now(),
+                'type': 'EMAIL',
+                'recipient': f"{recipient_name} ({recipient_email})",
+                'alarm_id': alarm_id,
+                'alarm_type': alarm_type,
+                'status': 'QUEUED 🕐 (will send when online)'
+            })
+            return False
+
     except Exception as e:
-        st.error(f"Email error: {e}")
+        print(f"[EMAIL] Outer error: {e}")
         return False
+
 
 def send_sms_notification(phone_number, recipient_name, alarm_type, turbine_id, severity, alarm_id):
     """Send SMS notification to stakeholder"""
@@ -563,22 +591,17 @@ def check_and_escalate():
 
 @st.cache_data
 def load_historical_data():
-    """Load all historical data"""
     try:
         historical_alarms = pd.read_csv(DATA_PATH + 'top_50_unique_detailed_alarms.csv')
         alarm_episodes = pd.read_csv(DATA_PATH + 'alarm_episodes_with_faults.csv')
         detailed_episodes = pd.read_csv(DATA_PATH + 'detailed_classified_alarm_episodes.csv')
-
         dmaic_file = DATA_PATH + 'DMAIC_Analysis_19_Alarms.csv'
-        if os.path.exists(dmaic_file):
-            dmaic_data = pd.read_csv(dmaic_file)
-        else:
-            dmaic_data = None
-
+        dmaic_data = pd.read_csv(dmaic_file) if os.path.exists(dmaic_file) else None
         return historical_alarms, alarm_episodes, detailed_episodes, dmaic_data
-    except Exception as e:
-        st.error(f"Error loading historical data: {e}")
-        return None, None, None, None
+    except Exception:
+        from utils.offline_data import get_fallback_historical
+        fallback = get_fallback_historical()
+        return fallback, None, None, None
 
 @st.cache_resource
 def load_ml_model():
@@ -597,13 +620,12 @@ def load_ml_model():
 
 @st.cache_data
 def load_simulation_data():
-    """Load simulated alarm stream"""
     try:
         sim_data = pd.read_csv(DATA_PATH + 'dashboard_alarm_stream.csv')
         return sim_data
-    except Exception as e:
-        st.warning("Simulation data not found. Generating sample data...")
-        return generate_sample_alarms(50)
+    except Exception:
+        from utils.offline_data import get_fallback_alarm_stream
+        return get_fallback_alarm_stream(50)
 
 def generate_sample_alarms(n=50):
     """Generate sample alarm data for demo"""
@@ -995,10 +1017,15 @@ def send_notification(alarm):
 # ═══════════════════════════════════════════════════════════════════
 
 with st.sidebar:
-    st.image("https://img.icons8.com/fluency/96/wind-turbine.png", width=100)
-    st.markdown('<div class="main-header">🌀 WindSense AI</div>', unsafe_allow_html=True)
+    try:
+        st.image("assets/windsense_logo_icon.png", width=90)
+    except Exception:
+        try:
+            st.image("assets/wind_turbine_fallback.png", width=80)
+        except Exception:
+            st.markdown("## 🌀", unsafe_allow_html=True)
+    st.markdown("<h2 style='color:#00C9B1; margin:0; font-size:1.3rem;'>WindSense AI</h2>", unsafe_allow_html=True)
     st.caption("Team TG0907494 | TECHgium 9th Edition")
-
     st.divider()
 
     st.subheader("📊 System Status")
@@ -1032,6 +1059,9 @@ with st.sidebar:
     if st.button("🗑️ Clear Buffer", use_container_width=True):
         st.session_state.alarm_buffer = []
         st.session_state.notifications = []
+        st.rerun()
+    if st.button("🔁 Reconnect & Refresh", use_container_width=True):
+        flush_queue()
         st.rerun()
 
 # ═══════════════════════════════════════════════════════════════════
