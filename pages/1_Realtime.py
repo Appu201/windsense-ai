@@ -14,6 +14,7 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from utils.email_queue import add_to_queue, flush_queue
+from utils.opcua_simulator import OPCUASimulator
 
 # ═══════════════════════════════════════════════════════════════════
 # PAGE CONFIGURATION
@@ -1068,16 +1069,16 @@ with st.sidebar:
 # MAIN TABS
 # ═══════════════════════════════════════════════════════════════════
 
-tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
+tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8 = st.tabs([
     "📡 Real-Time Monitoring",
     "🤖 ML Model & Training",
     "📊 Historical Analytics",
     "🔔 Notifications & Workflow",
     "📋 DMAIC Analysis",
     "🎯 Optimization & Forecasting",
-    "🎛️ Alarm Acknowledgment"
+    "🎛️ Alarm Acknowledgment",
+    "🏭 OPC UA Live Feed"
 ])
-
 # ═══════════════════════════════════════════════════════════════════
 # TAB 1: REAL-TIME MONITORING
 # ═══════════════════════════════════════════════════════════════════
@@ -1332,9 +1333,79 @@ with tab3:
                 st.dataframe(display_df, use_container_width=True, height=600)
             else:
                 st.dataframe(historical_alarms, use_container_width=True, height=600)
+# Department breakdown animated chart
+            st.subheader("📊 Alarm Episodes by Department")
 
+            dept_data = pd.DataFrame({
+                'Department': [
+                    'Grid Operations', 'Control Systems', 'Mechanical Safety',
+                    'Hydraulic Systems', 'Electrical', 'Blade Systems',
+                    'Nacelle Systems', 'Power Electronics', 'Transformer',
+                    'Generator', 'General Maintenance'
+                ],
+                'Frequency': [4850, 3200, 1800, 1500, 1200, 980, 750, 620, 480, 390, 247]
+            })
+
+            fig = px.bar(
+                dept_data.sort_values('Frequency', ascending=True),
+                x='Frequency',
+                y='Department',
+                orientation='h',
+                color='Frequency',
+                color_continuous_scale=[[0, '#0D1B2A'], [0.5, '#4FC3F7'], [1.0, '#00C9B1']],
+                title='Alarm Episodes by Department — 9.9 Years of Data',
+                labels={'Frequency': 'Total Alarm Episodes', 'Department': ''}
+            )
+            fig.update_layout(
+                plot_bgcolor='#0D1B2A',
+                paper_bgcolor='#0D1B2A',
+                font_color='white',
+                title_font_color='#00C9B1',
+                height=450,
+                showlegend=False,
+                margin=dict(l=10, r=10, t=50, b=10)
+            )
+            fig.update_xaxes(gridcolor='#1a2a3a', color='white')
+            fig.update_yaxes(color='white')
+            st.plotly_chart(fig, use_container_width=True)
+
+            # Downtime by alarm type chart
+            st.subheader("⏱️ Top 10 Alarms by Total Downtime")
+
+            downtime_data = pd.DataFrame({
+                'Alarm_Type': [
+                    'Grid Frequency Deviation', 'Extended Grid Outage',
+                    'Main Controller Fault', 'Momentary Grid Loss',
+                    'Grid Voltage Fluctuation', 'Emergency Brake Activation',
+                    'Generator Bearing Overheating', 'Hydraulic Oil Contamination',
+                    'Converter Circuit Fault', 'Yaw System Hydraulic Fault'
+                ],
+                'Downtime_hrs': [12500, 9800, 7200, 5400, 4100, 2800, 1900, 1200, 890, 620]
+            })
+
+            fig2 = px.bar(
+                downtime_data.sort_values('Downtime_hrs', ascending=True),
+                x='Downtime_hrs',
+                y='Alarm_Type',
+                orientation='h',
+                color='Downtime_hrs',
+                color_continuous_scale=[[0, '#1a0a0a'], [0.5, '#ff8800'], [1.0, '#ff4444']],
+                title='Top 10 Alarms by Total Downtime (Hours)',
+                labels={'Downtime_hrs': 'Total Downtime (hrs)', 'Alarm_Type': ''}
+            )
+            fig2.update_layout(
+                plot_bgcolor='#0D1B2A',
+                paper_bgcolor='#0D1B2A',
+                font_color='white',
+                title_font_color='#ff8800',
+                height=450,
+                showlegend=False,
+                margin=dict(l=10, r=10, t=50, b=10)
+            )
+            fig2.update_xaxes(gridcolor='#1a2a3a', color='white')
+            fig2.update_yaxes(color='white')
+            st.plotly_chart(fig2, use_container_width=True)
             st.divider()
-
         except Exception as e:
             st.error(f"Error displaying historical data: {e}")
             st.info("Available columns: " + ", ".join(historical_alarms.columns.tolist()))
@@ -1999,6 +2070,80 @@ with tab7:
 
     else:
         st.info("No alarms have been acknowledged yet")
+
+# ═══════════════════════════════════════════════════════════════════
+# TAB 8: OPC UA LIVE FEED
+# ═══════════════════════════════════════════════════════════════════
+
+with tab8:
+    st.markdown('<div class="main-header">🏭 OPC UA Industrial Data Feed</div>',
+                unsafe_allow_html=True)
+
+    st.markdown("""
+    **OPC UA (OPC Unified Architecture)** is the international standard for industrial 
+    machine-to-machine communication. Real wind farm SCADA systems use OPC UA to stream 
+    sensor data from turbines to control rooms. This tab simulates that live industrial 
+    data feed — exactly what WindSense AI would connect to in a production deployment.
+    """)
+
+    st.divider()
+
+    # Initialize OPC UA simulator in session state
+    if 'opcua_sim' not in st.session_state:
+        st.session_state.opcua_sim = OPCUASimulator()
+
+    # Fleet summary
+    st.subheader("⚡ Live Fleet Status")
+
+    fleet = st.session_state.opcua_sim.get_fleet_summary()
+
+    col1, col2, col3, col4 = st.columns(4)
+
+    with col1:
+        st.metric("🔋 Total Fleet Power", f"{fleet['total_power_kw']:,.0f} kW")
+    with col2:
+        st.metric("✅ Turbines Normal", fleet['turbines_normal'])
+    with col3:
+        st.metric("🚨 Turbines in Alarm", fleet['turbines_in_alarm'],
+                  delta_color="inverse")
+    with col4:
+        st.metric("📡 Grid Frequency", f"{fleet['grid_frequency_hz']} Hz")
+
+    if fleet['active_alarm_types']:
+        for alarm in fleet['active_alarm_types']:
+            st.error(f"🚨 ACTIVE ALARM DETECTED: {alarm}")
+
+    st.divider()
+
+    # Live node data table
+    st.subheader("📋 OPC UA Node Data — Live Snapshot")
+
+    readings = st.session_state.opcua_sim.get_current_readings()
+    readings_df = pd.DataFrame(readings)
+
+    display_readings = readings_df[['node_id', 'description', 'value', 'unit', 'status', 'timestamp']].copy()
+    display_readings.columns = ['Node ID', 'Description', 'Value', 'Unit', 'Status', 'Timestamp']
+
+    st.dataframe(
+        display_readings,
+        use_container_width=True,
+        height=500
+    )
+
+    st.divider()
+
+    # Refresh button
+    col_r1, col_r2, col_r3 = st.columns([1, 2, 1])
+    with col_r2:
+        if st.button("🔄 Refresh OPC UA Data", use_container_width=True, type="primary"):
+            st.session_state.opcua_sim = OPCUASimulator()
+            st.rerun()
+
+    st.caption(
+        "📌 In production, this feed would connect to the wind farm's OPC UA server "
+        "via opcua-asyncio and stream data in real-time. Node IDs follow IEC 62541 "
+        "naming conventions used in industrial SCADA deployments."
+    )
 
 # ═══════════════════════════════════════════════════════════════════
 # FOOTER
