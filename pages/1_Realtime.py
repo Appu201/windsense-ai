@@ -27,6 +27,9 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+
+from utils.theme import apply_dark_theme
+apply_dark_theme()
 st.markdown("""
 <style>
 [data-testid="stSidebarNav"] {display: none;}

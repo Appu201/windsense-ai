@@ -42,7 +42,8 @@ st.set_page_config(
     layout="centered"
 )
 
-st.markdown("<style>[data-testid='stSidebarNav']{display:none !important;}</style>", unsafe_allow_html=True)
+from utils.theme import apply_dark_theme
+apply_dark_theme()
 
 # Capture ack param and store in session state immediately
 ack_id = st.query_params.get('ack', '')
@@ -52,42 +53,6 @@ if ack_id:
 # Redirect if already logged in
 if st.session_state.get('authenticated', False):
     st.switch_page("pages/1_Realtime.py")
-
-st.markdown("""
-<style>
-    .stApp { background-color: #0D1B2A; color: white; }
-    .main .block-container { background-color: #0D1B2A; }
-    [data-testid="stForm"] {
-        background: linear-gradient(135deg, #1a2a3a 0%, #0D1B2A 100%);
-        border: 1px solid #00C9B1;
-        border-radius: 15px;
-        padding: 2rem;
-        box-shadow: 0 0 30px rgba(0,201,177,0.2);
-    }
-    h1, h2, h3 { color: #00C9B1 !important; }
-    p, label { color: #FFFFFF !important; }
-    .stTextInput input {
-        background-color: #1a2a3a !important;
-        border: 1px solid #00C9B1 !important;
-        color: white !important;
-        border-radius: 8px;
-    }
-    .stTextInput [data-baseweb="input"] [title="Press Enter to submit form"] {
-        display: none !important;
-    }
-    small {
-        display: none !important;
-    }
-    [data-testid="InputInstructions"] {
-        display: none !important;
-    }
-    .stTextInput div[data-baseweb="base-input"] > div {
-        display: none !important;
-    }
-
-
-</style>
-""", unsafe_allow_html=True)
 
 st.markdown(f"""
 <div style='text-align:center; margin-bottom:1rem;'>
@@ -110,7 +75,6 @@ with st.form("login_form"):
     password = st.text_input("Password", type="password", placeholder="Enter password")
 
     submit = st.form_submit_button("🔓 Login", use_container_width=True, type="primary")
-   
 
     if submit:
         if username and password:
@@ -121,8 +85,6 @@ with st.form("login_form"):
                 st.session_state.user_role = user_data['role']
                 st.session_state.user_email = user_data.get('email', '')
                 st.session_state.login_time = datetime.now().isoformat()
-
-                
                 st.session_state.acknowledged_alarms = {}
 
                 st.success(f"✅ Welcome, {user_data['name']}!")
