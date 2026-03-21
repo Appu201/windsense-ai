@@ -42,6 +42,8 @@ st.set_page_config(
     layout="centered"
 )
 
+st.markdown("<style>[data-testid='stSidebarNav']{display:none !important;}</style>", unsafe_allow_html=True)
+
 # Capture ack param and store in session state immediately
 ack_id = st.query_params.get('ack', '')
 if ack_id:
@@ -70,16 +72,30 @@ st.markdown("""
         color: white !important;
         border-radius: 8px;
     }
+    .stTextInput [data-baseweb="input"] [title="Press Enter to submit form"] {
+        display: none !important;
+    }
+    small {
+        display: none !important;
+    }
+    [data-testid="InputInstructions"] {
+        display: none !important;
+    }
+    .stTextInput div[data-baseweb="base-input"] > div {
+        display: none !important;
+    }
+
+
 </style>
 """, unsafe_allow_html=True)
 
-col1, col2, col3 = st.columns([1, 2, 1])
-with col2:
-    st.image("https://img.icons8.com/fluency/150/wind-turbine.png", width=100)
-
-st.markdown("<h1 style='text-align:center; color:#00C9B1;'>🌀 WindSense AI</h1>", unsafe_allow_html=True)
-st.markdown("<p style='text-align:center; color:#4FC3F7;'>Team TG0907494 | TECHgium 9th Edition</p>", unsafe_allow_html=True)
-st.markdown("<p style='text-align:center; color:#4FC3F7;'>Intelligent Predictive Control and Alarm Optimization</p>", unsafe_allow_html=True)
+st.markdown(f"""
+<div style='text-align:center; margin-bottom:1rem;'>
+    <img src='data:image/png;base64,{__import__('base64').b64encode(open('assets/windsense_logo_full.png','rb').read()).decode()}' width='320'/>
+</div>
+<p style='text-align:center; color:#4FC3F7; font-size:0.95rem;'>Team TG0907494 | TECHgium 9th Edition</p>
+<p style='text-align:center; color:#6B8FA8; font-size:0.85rem;'>Intelligent Alarm Classification & Optimization</p>
+""", unsafe_allow_html=True)
 
 st.divider()
 
@@ -93,16 +109,8 @@ with st.form("login_form"):
     username = st.text_input("Username", placeholder="Enter username")
     password = st.text_input("Password", type="password", placeholder="Enter password")
 
-    col1, col2 = st.columns(2)
-    with col1:
-        submit = st.form_submit_button("🔓 Login", use_container_width=True, type="primary")
-    with col2:
-        demo_btn = st.form_submit_button("👁️ Demo Login", use_container_width=True)
-
-    if demo_btn:
-        username = "demo"
-        password = "demo123"
-        submit = True
+    submit = st.form_submit_button("🔓 Login", use_container_width=True, type="primary")
+   
 
     if submit:
         if username and password:
