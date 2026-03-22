@@ -96,6 +96,22 @@ DARK_CSS = """
     background-color: #112233 !important;
 }
 
+/* ── DataFrame text fix ── */
+[data-testid="stDataFrame"] canvas {
+    color: #D0D8E0 !important;
+}
+.glideDataEditor {
+    background-color: #112233 !important;
+    color: #D0D8E0 !important;
+}
+.dvn-scroller * {
+    color: #D0D8E0 !important;
+}
+[data-testid="stDataFrame"] * {
+    color: #D0D8E0 !important;
+    background-color: #112233 !important;
+}
+
 /* ── Buttons ── */
 .stButton > button {
     background: linear-gradient(135deg, #007A6E 0%, #005580 100%) !important;
