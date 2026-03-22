@@ -1026,14 +1026,14 @@ with tab1:
 
             if conf < 70:
                 flagged_type = "⚠️ UNCERTAIN — Manual Review Required"
-                flag_status = "🟡 Low Confidence"
+                flag_status = "Low Confidence"
                 uncertain_count += 1
             elif conf < 85:
                 flagged_type = pred
-                flag_status = "🟠 Moderate Confidence"
+                flag_status = "Moderate Confidence"
             else:
                 flagged_type = pred
-                flag_status = "🟢 High Confidence"
+                flag_status = "High Confidence"
 
             display_rows.append({
                 'Alarm ID': row.get('alarm_id', 'N/A'),
@@ -1046,7 +1046,7 @@ with tab1:
             })
 
         display_df = pd.DataFrame(display_rows)
-        st.dataframe(display_df, use_container_width=True, height=400)
+        st.table(display_df)
 
         if uncertain_count > 0:
             st.warning(
@@ -1234,7 +1234,7 @@ with tab3:
             if display_cols:
                 display_df = historical_alarms[display_cols].copy()
                 display_df.columns = col_names
-                st.dataframe(display_df, use_container_width=True, height=600)
+                st.table(display_df)
             else:
                 st.dataframe(historical_alarms, use_container_width=True, height=600)
 
