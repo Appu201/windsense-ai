@@ -27,28 +27,93 @@ from utils.theme import apply_dark_theme
 apply_dark_theme()
 st.markdown("""
 <style>
-[data-testid="stSidebarNav"] {display: none;}
-.main-header {
-    font-size: 2.5rem;
-    font-weight: 700;
-    color: #00C9B1;
-    text-align: center;
-    padding: 1rem 0;
-    border-bottom: 3px solid #00C9B1;
-    margin-bottom: 2rem;
-}
-[data-testid="stMetricValue"] { font-size: 1.8rem !important; }
-[data-testid="stMetricLabel"] { font-size: 0.9rem !important; }
-[data-testid="stMetricDelta"] { font-size: 0.8rem !important; }
-.dmaic-measure [data-testid="stMetricValue"] {
-    font-size: 1.0rem !important;
-    white-space: normal !important;
-    word-break: break-word !important;
-}
-.dmaic-measure [data-testid="stMetricLabel"] { font-size: 0.75rem !important; }
+    /* Hide sidebar nav */
+    [data-testid="stSidebarNav"] {display: none !important;}
+
+    /* App background */
+    .stApp { background-color: #0D1B2A; color: #E8F4FD; }
+    .main .block-container { background-color: #0D1B2A; padding-top: 1rem; }
+
+    /* Headers */
+    h1, h2, h3 { color: #00C9B1 !important; }
+    .main-header {
+        font-size: 2rem;
+        font-weight: 700;
+        color: #00C9B1;
+        text-align: center;
+        padding: 0.75rem 0;
+        border-bottom: 2px solid #00C9B1;
+        margin-bottom: 1.5rem;
+    }
+
+    /* Sidebar */
+    [data-testid="stSidebar"] {
+        background: linear-gradient(180deg, #0D1B2A 0%, #1a2a3a 100%);
+        border-right: 1px solid #00C9B1;
+    }
+    [data-testid="stSidebar"] * { color: #E8F4FD !important; }
+
+    /* Tabs */
+    .stTabs [data-baseweb="tab-list"] { gap: 1rem; background-color: #0D1B2A; }
+    .stTabs [data-baseweb="tab"] {
+        height: 2.5rem;
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: #4FC3F7 !important;
+        background-color: #1a2a3a;
+        border-radius: 6px 6px 0 0;
+    }
+    .stTabs [aria-selected="true"] {
+        background-color: #00C9B1 !important;
+        color: #0D1B2A !important;
+    }
+
+    /* Metrics */
+    [data-testid="stMetricValue"] { font-size: 1.6rem !important; color: #00C9B1 !important; }
+    [data-testid="stMetricLabel"] { font-size: 0.85rem !important; color: #4FC3F7 !important; }
+    [data-testid="stMetricDelta"] { font-size: 0.75rem !important; }
+
+    /* Buttons */
+    .stButton > button {
+        background: linear-gradient(135deg, #004D40, #00796B);
+        color: white !important;
+        border: 1px solid #00C9B1;
+        border-radius: 6px;
+        font-weight: 600;
+    }
+    .stButton > button:hover {
+        background: linear-gradient(135deg, #00796B, #00C9B1);
+        border: 1px solid #4FC3F7;
+    }
+
+    /* Input fields */
+    .stTextInput input, .stSelectbox div, .stTextArea textarea {
+        background-color: #1a2a3a !important;
+        border: 1px solid #00C9B1 !important;
+        color: #E8F4FD !important;
+        border-radius: 6px;
+    }
+
+    /* Expanders */
+    .streamlit-expanderHeader {
+        background-color: #1a2a3a !important;
+        color: #00C9B1 !important;
+        border: 1px solid #2a3a4a;
+        border-radius: 6px;
+    }
+
+    /* Dividers */
+    hr { border-color: #2a3a4a !important; }
+
+    /* DMAIC measure section */
+    .dmaic-measure [data-testid="stMetricValue"] {
+        font-size: 1.0rem !important;
+        white-space: normal !important;
+        word-break: break-word !important;
+    }
+    .dmaic-measure [data-testid="stMetricLabel"] { font-size: 0.75rem !important; }
 </style>
 """, unsafe_allow_html=True)
-
 BASE_PATH = os.path.join(os.path.dirname(os.path.abspath('app.py')), '')
 DATA_PATH = os.path.join(os.path.dirname(os.path.abspath('app.py')), 'data') + os.sep
 MODEL_PATH = os.path.join(os.path.dirname(os.path.abspath('app.py')), 'models') + os.sep
