@@ -13,6 +13,7 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from utils.email_queue import add_to_queue, flush_queue
+from sklearn.ensemble import IsolationForest
 
 # ═══════════════════════════════════════════════════════════════════
 # PAGE CONFIGURATION
@@ -951,6 +952,21 @@ if 'rca_engine' not in st.session_state:
 # PREDICTION FUNCTION
 # ═══════════════════════════════════════════════════════════════════
 
+def detect_anomaly(alarm_data_row, feature_names):
+    try:
+        if not st.session_state.get('isolation_forest_trained', False):
+            return False  # Not trained yet
+
+        iso_model = st.session_state.get('isolation_forest_model')
+        if iso_model is None:
+            return False
+
+        X = [[alarm_data_row.get(f, 0) for f in feature_names]]
+        prediction = iso_model.predict(X)
+        return prediction[0] == -1  # -1 means anomaly in Isolation Forest
+    except:
+        return False
+
 def predict_alarm_type(alarm_data, model, features):
     if model is None:
         status = alarm_data['status_type_id']
@@ -971,49 +987,21 @@ def predict_alarm_type(alarm_data, model, features):
 # ═══════════════════════════════════════════════════════════════════
 # NOTIFICATION SYSTEM
 # ═══════════════════════════════════════════════════════════════════
-
-def send_notification(alarm):
-    dept_mapping = {
-        'Main Controller Fault': 'Software & Controls',
-        'Grid Frequency Deviation': 'Grid Operations',
-        'Emergency Brake Activation': 'Mechanical Safety',
-        'Generator Bearing Overheating': 'Mechanical - Rotating Equipment',
-        'Hydraulic Oil Contamination': 'Hydraulic Systems',
-        'Converter Circuit Fault': 'Electrical - Power Electronics',
-        'Pitch System Fault': 'Mechanical - Blade Systems',
-        'Yaw System Fault': 'Mechanical - Nacelle Systems'
-    }
-
-    department = dept_mapping.get(alarm['predicted_type'], 'General Maintenance')
-
-    stakeholder_info = STAKEHOLDERS.get(alarm['predicted_type'], STAKEHOLDERS.get('DEFAULT', {}))
-    primary = stakeholder_info.get('primary', {})
-
-    notification = {
-        'timestamp': alarm['timestamp'],
-        'alarm_id': alarm['alarm_id'],
-        'turbine': f"T-{alarm['asset_id']}",
-        'alarm_type': alarm['predicted_type'],
-        'priority': alarm['priority'],
-        'department': department,
-        'stakeholder': f"{primary.get('name', 'N/A')} ({primary.get('role', 'N/A')})",
-        'message': f"🚨 {alarm['priority']} ALERT: {alarm['predicted_type']} detected on Turbine {alarm['asset_id']}. Confidence: {alarm['confidence']:.1f}%. Immediate action required.",
-        'sent': True
-    }
-
-    st.session_state.notifications.insert(0, notification)
-
-    if len(st.session_state.notifications) > 50:
-        st.session_state.notifications = st.session_state.notifications[:50]
-
-    if alarm['priority'] == 'CRITICAL':
-        process_critical_alarm(alarm['predicted_type'], alarm['asset_id'], alarm['alarm_id'], alarm['priority'])
-
-    return notification
-
-# ═══════════════════════════════════════════════════════════════════
-# SIDEBAR
-# ═══════════════════════════════════════════════════════════════════
+def train_isolation_forest():
+    if len(st.session_state.alarm_buffer) < 10:
+        return False
+    sensors = ['sensor_11_avg', 'sensor_12_avg', 'sensor_41_avg', 'power_30_avg', 'wind_speed_3_avg']
+    df = pd.DataFrame(st.session_state.alarm_buffer)
+    available = [s for s in sensors if s in df.columns]
+    if not available:
+        return False
+    X = df[available].fillna(0).values
+    iso = IsolationForest(contamination=0.1, random_state=42)
+    iso.fit(X)
+    st.session_state.isolation_forest_model = iso
+    st.session_state.isolation_forest_trained = True
+    st.session_state.isolation_forest_features = available
+    return True
 
 with st.sidebar:
     try:
@@ -1023,8 +1011,10 @@ with st.sidebar:
             st.image("assets/wind_turbine_fallback.png", width=80)
         except Exception:
             st.markdown("## 🌀", unsafe_allow_html=True)
+
     st.markdown("<h2 style='color:#00C9B1; margin:0; font-size:1.3rem;'>WindSense AI</h2>", unsafe_allow_html=True)
     st.caption("Team TG0907494 | TECHgium 9th Edition")
+
     st.divider()
 
     st.subheader("📊 System Status")
@@ -1059,10 +1049,27 @@ with st.sidebar:
         st.session_state.alarm_buffer = []
         st.session_state.notifications = []
         st.rerun()
+
+    st.divider()
+
+    st.subheader("🔬 Anomaly Detection")
+
+    if st.button("🧠 Train Anomaly Detector", use_container_width=True):
+        if train_isolation_forest():
+            st.success("✅ Anomaly detector trained!")
+        else:
+            st.warning("⚠️ Need 10+ alarms first")
+
+    if st.session_state.get('isolation_forest_trained', False):
+        st.caption(f"✅ Model trained on {len(st.session_state.alarm_buffer)} alarms")
+    else:
+        st.caption("❌ Not trained yet. Generate 10+ alarms first.")
+
+    st.divider()
+
     if st.button("🔁 Reconnect & Refresh", use_container_width=True):
         flush_queue()
         st.rerun()
-
 # ═══════════════════════════════════════════════════════════════════
 # MAIN TABS
 # ═══════════════════════════════════════════════════════════════════
