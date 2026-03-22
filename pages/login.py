@@ -72,16 +72,7 @@ st.markdown("""
         color: white !important;
         border-radius: 8px;
     }
-    .stTextInput [data-baseweb="input"] [title="Press Enter to submit form"] {
-        display: none !important;
-    }
-    small {
-        display: none !important;
-    }
     [data-testid="InputInstructions"] {
-        display: none !important;
-    }
-    .stTextInput div[data-baseweb="base-input"] > div {
         display: none !important;
     }
 
