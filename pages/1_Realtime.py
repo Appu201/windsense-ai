@@ -9,7 +9,6 @@ import json
 import os
 from datetime import datetime, timedelta
 import time
-import random
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
@@ -1081,7 +1080,6 @@ tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
 # ═══════════════════════════════════════════════════════════════════
 # TAB 1: REAL-TIME MONITORING
 # ═══════════════════════════════════════════════════════════════════
-
 with tab1:
     st.markdown('<div class="main-header">📡 Real-Time Alarm Monitoring</div>', unsafe_allow_html=True)
 
@@ -1127,7 +1125,6 @@ with tab1:
         st.subheader("📋 Detailed Alarm Data")
         alarm_df = pd.DataFrame(st.session_state.alarm_buffer)
 
-        # Build display dataframe with confidence flagging
         display_rows = []
         uncertain_count = 0
 
@@ -1167,6 +1164,7 @@ with tab1:
 
         csv = display_df.to_csv(index=False).encode('utf-8')
         st.download_button("📥 Download Alarm Log (CSV)", csv, "windsense_alarm_log.csv", "text/csv", use_container_width=True)
+
     else:
         st.info("👈 Click 'Generate New Alarm' in the sidebar to start real-time monitoring")
 
@@ -1178,14 +1176,24 @@ with tab1:
         with col1:
             st.subheader("📊 Alarms by Type")
             type_counts = pd.DataFrame(st.session_state.alarm_buffer)['predicted_type'].value_counts()
-            fig = px.bar(x=type_counts.index, y=type_counts.values, labels={'x': 'Alarm Type', 'y': 'Count'}, color=type_counts.values, color_continuous_scale='Reds')
+            fig = px.bar(
+                x=type_counts.index,
+                y=type_counts.values,
+                labels={'x': 'Alarm Type', 'y': 'Count'},
+                color=type_counts.values,
+                color_continuous_scale='Reds'
+            )
             fig.update_layout(height=400, showlegend=False)
             st.plotly_chart(fig, use_container_width=True)
 
         with col2:
             st.subheader("🌀 Alarms by Turbine")
             turbine_counts = pd.DataFrame(st.session_state.alarm_buffer)['asset_id'].value_counts()
-            fig = px.pie(values=turbine_counts.values, names=[f"T-{tid}" for tid in turbine_counts.index], hole=0.4)
+            fig = px.pie(
+                values=turbine_counts.values,
+                names=[f"T-{tid}" for tid in turbine_counts.index],
+                hole=0.4
+            )
             fig.update_layout(height=400)
             st.plotly_chart(fig, use_container_width=True)
 
@@ -1204,6 +1212,60 @@ with tab1:
             for action in rca_result['recommended_actions']:
                 st.write(f"  ✓ {action}")
 
+        st.divider()
+        st.subheader("📉 Live Sensor Feed — Real-Time Readings")
+
+        sensor_df = pd.DataFrame(st.session_state.alarm_buffer)
+
+        sensors_to_plot = ['sensor_11_avg', 'sensor_12_avg', 'sensor_41_avg', 'power_30_avg', 'wind_speed_3_avg']
+        available_sensors = [s for s in sensors_to_plot if s in sensor_df.columns]
+
+        sensor_labels = {
+            'sensor_11_avg': 'Gearbox Bearing Temp (°C)',
+            'sensor_12_avg': 'Gearbox Oil Temp (°C)',
+            'sensor_41_avg': 'Hydraulic Oil Temp (°C)',
+            'power_30_avg': 'Grid Power (kW)',
+            'wind_speed_3_avg': 'Wind Speed (m/s)'
+        }
+
+        if available_sensors:
+            selected_sensor = st.selectbox(
+                "Select sensor to plot:",
+                available_sensors,
+                format_func=lambda s: sensor_labels.get(s, s),
+                key="sensor_select"
+            )
+
+            plot_df = sensor_df[['alarm_id', selected_sensor]].copy()
+            plot_df = plot_df.dropna(subset=[selected_sensor])
+            plot_df = plot_df.tail(20)
+
+            fig_sensor = go.Figure()
+            fig_sensor.add_trace(go.Scatter(
+                x=plot_df['alarm_id'],
+                y=plot_df[selected_sensor],
+                mode='lines+markers',
+                name=sensor_labels.get(selected_sensor, selected_sensor),
+                line=dict(color='#00C9B1', width=2),
+                marker=dict(size=6, color='#00C9B1')
+            ))
+
+            fig_sensor.update_layout(
+                title=f'Live: {sensor_labels.get(selected_sensor, selected_sensor)} — Last 20 Alarms',
+                xaxis_title='Alarm ID',
+                yaxis_title=sensor_labels.get(selected_sensor, selected_sensor),
+                height=350,
+                plot_bgcolor='#0D1B2A',
+                paper_bgcolor='#0D1B2A',
+                font=dict(color='white'),
+                xaxis=dict(tickangle=45)
+            )
+
+            st.plotly_chart(fig_sensor, use_container_width=True)
+            st.caption("Generate more alarms using the sidebar button to see the sensor trend update in real time.")
+
+        else:
+            st.info("Sensor data not available in current alarm buffer.")
 # ═══════════════════════════════════════════════════════════════════
 # TAB 2: ML MODEL & TRAINING
 # ═══════════════════════════════════════════════════════════════════
@@ -1293,7 +1355,6 @@ with tab3:
     if historical_alarms is not None:
         try:
             col1, col2, col3, col4 = st.columns(4)
-
             with col1:
                 st.metric("Total Episodes", "15,517")
             with col2:
@@ -1335,9 +1396,57 @@ with tab3:
 
             st.divider()
 
+            st.subheader("🗓️ Alarm Heatmap — Turbine × Hour of Day")
+
+            try:
+                if detailed_episodes is not None and len(detailed_episodes) > 0:
+                    heatmap_df = detailed_episodes.copy()
+                    heatmap_df['Start_Time'] = pd.to_datetime(heatmap_df['Start_Time'])
+                    heatmap_df['Hour'] = heatmap_df['Start_Time'].dt.hour
+                    heatmap_df['Turbine'] = heatmap_df['Asset_ID'].apply(
+                        lambda x: f"T-{int(x)}" if pd.notna(x) else "T-Unknown"
+                    )
+
+                    pivot = heatmap_df.groupby(['Turbine', 'Hour']).size().reset_index(name='Alarm Count')
+                    pivot_wide = pivot.pivot(index='Turbine', columns='Hour', values='Alarm Count').fillna(0)
+
+                    for h in range(24):
+                        if h not in pivot_wide.columns:
+                            pivot_wide[h] = 0
+                    pivot_wide = pivot_wide.reindex(sorted(pivot_wide.columns), axis=1)
+
+                    fig_heat = go.Figure(data=go.Heatmap(
+                        z=pivot_wide.values,
+                        x=[f"{h:02d}:00" for h in pivot_wide.columns],
+                        y=pivot_wide.index.tolist(),
+                        colorscale='Reds',
+                        hoverongaps=False,
+                        colorbar=dict(title='Alarm Count')
+                    ))
+
+                    fig_heat.update_layout(
+                        title='Alarm Frequency by Turbine and Hour of Day (9.9 Years)',
+                        xaxis_title='Hour of Day',
+                        yaxis_title='Turbine',
+                        height=350,
+                        plot_bgcolor='#0D1B2A',
+                        paper_bgcolor='#0D1B2A',
+                        font=dict(color='white')
+                    )
+
+                    st.plotly_chart(fig_heat, use_container_width=True)
+                    st.caption("Peak hours indicate when grid/weather events are most common. Use this to schedule preventive maintenance in low-alarm windows.")
+
+                else:
+                    st.info("Historical episode data not loaded. Heatmap unavailable.")
+
+            except Exception as e:
+                st.warning(f"Heatmap could not be rendered: {e}")
+
         except Exception as e:
             st.error(f"Error displaying historical data: {e}")
             st.info("Available columns: " + ", ".join(historical_alarms.columns.tolist()))
+
     else:
         st.info("Historical data not available. Please check data file paths.")
 
