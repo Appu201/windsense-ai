@@ -1,0 +1,132 @@
+# utils/isolation_forest.py
+# Phase 2: Isolation Forest anomaly detection
+# Detects new/unseen alarm patterns not in the 19 trained classes
+
+import numpy as np
+import pandas as pd
+from sklearn.ensemble import IsolationForest
+import json
+import os
+
+BASE_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
+DATA_PATH = os.path.join(BASE_PATH, 'data')
+
+SENSOR_FEATURES = [
+    'sensor_11_avg',
+    'sensor_12_avg',
+    'sensor_13_avg',
+    'sensor_14_avg',
+    'sensor_41_avg',
+    'sensor_38_avg',
+    'sensor_39_avg',
+    'sensor_40_avg',
+    'power_30_avg',
+    'sensor_18_avg',
+    'wind_speed_3_avg'
+]
+
+ANOMALY_LOG_FILE = os.path.join(DATA_PATH, 'anomaly_log.json')
+
+
+class IsolationForestDetector:
+    def __init__(self, contamination=0.1):
+        self.contamination = contamination
+        self.model = None
+        self.is_trained = False
+        self.features_used = []
+        self.anomaly_log = self._load_anomaly_log()
+        self.training_sample_count = 0
+
+    def _load_anomaly_log(self):
+        if os.path.exists(ANOMALY_LOG_FILE):
+            try:
+                with open(ANOMALY_LOG_FILE, 'r') as f:
+                    return json.load(f)
+            except:
+                return {}
+        return {}
+
+    def _save_anomaly_log(self):
+        try:
+            with open(ANOMALY_LOG_FILE, 'w') as f:
+                json.dump(self.anomaly_log, f, indent=2)
+        except Exception as e:
+            print(f"Could not save anomaly log: {e}")
+
+    def _prepare_features(self, alarm_buffer):
+        df = pd.DataFrame(alarm_buffer)
+        available = [f for f in SENSOR_FEATURES if f in df.columns]
+        self.features_used = available
+        if not available:
+            return None
+        X = df[available].fillna(0).values
+        return X
+
+    def train(self, alarm_buffer):
+        if len(alarm_buffer) < 10:
+            return False
+        X = self._prepare_features(alarm_buffer)
+        if X is None:
+            return False
+        self.model = IsolationForest(
+            contamination=self.contamination,
+            n_estimators=100,
+            random_state=42
+        )
+        self.model.fit(X)
+        self.is_trained = True
+        self.training_sample_count = len(alarm_buffer)
+        return True
+
+    def predict(self, alarm_dict):
+        if not self.is_trained or self.model is None:
+            return False, 0.0
+        try:
+            feature_vector = [alarm_dict.get(f, 0) for f in self.features_used]
+            X = np.array(feature_vector).reshape(1, -1)
+            prediction = self.model.predict(X)[0]
+            score = self.model.score_samples(X)[0]
+            normalised = max(0.0, min(1.0, (-score - 0.1) / 0.6))
+            is_anomaly = (prediction == -1)
+            return is_anomaly, round(normalised, 3)
+        except Exception:
+            return False, 0.0
+
+    def log_anomaly(self, alarm_dict, anomaly_score):
+        alarm_id = alarm_dict.get('alarm_id', 'unknown')
+        self.anomaly_log[alarm_id] = {
+            'alarm_id': alarm_id,
+            'timestamp': alarm_dict.get('timestamp', ''),
+            'turbine': alarm_dict.get('asset_id', ''),
+            'anomaly_score': anomaly_score,
+            'sensor_snapshot': {f: alarm_dict.get(f, 0) for f in self.features_used},
+            'status': 'pending_review',
+            'operator_label': None
+        }
+        self._save_anomaly_log()
+
+    def label_anomaly(self, alarm_id, operator_label):
+        if alarm_id in self.anomaly_log:
+            self.anomaly_log[alarm_id]['operator_label'] = operator_label
+            self.anomaly_log[alarm_id]['status'] = 'labelled'
+            self._save_anomaly_log()
+            return True
+        return False
+
+    def get_pending_reviews(self):
+        return {
+            aid: data for aid, data in self.anomaly_log.items()
+            if data.get('status') == 'pending_review'
+        }
+
+    def get_stats(self):
+        total = len(self.anomaly_log)
+        pending = len(self.get_pending_reviews())
+        labelled = total - pending
+        return {
+            'total_anomalies_detected': total,
+            'pending_review': pending,
+            'labelled': labelled,
+            'training_samples': self.training_sample_count,
+            'features_used': len(self.features_used)
+        }
