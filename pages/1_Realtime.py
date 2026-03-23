@@ -1894,6 +1894,63 @@ with tab7:
     else:
         st.info("No alarms have been acknowledged yet")
 
+    st.divider()
+    st.subheader("🔬 Anomaly Review Panel")
+    st.caption("Alarms flagged as anomalous by Isolation Forest, awaiting operator review")
+
+    if hasattr(st.session_state, 'iso_detector') and st.session_state.iso_detector.is_trained:
+        pending = st.session_state.iso_detector.get_pending_reviews()
+        stats = st.session_state.iso_detector.get_stats()
+
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.metric("Total Anomalies", stats['total_anomalies_detected'])
+        with col2:
+            st.metric("Pending Review", stats['pending_review'])
+        with col3:
+            st.metric("Labelled", stats['labelled'])
+
+        if pending:
+            st.warning(f"⚠️ {len(pending)} anomalies need your review")
+            for alarm_id, data in list(pending.items())[:5]:
+                with st.expander(
+                    f"⚠️ {alarm_id} | Turbine T-{data['turbine']} | "
+                    f"Score: {data['anomaly_score']:.2f} | {data['timestamp']}"
+                ):
+                    st.write("**Sensor Snapshot:**")
+                    for sensor, val in data['sensor_snapshot'].items():
+                        st.write(f"  {sensor}: {val:.2f}")
+
+                    st.write("**Assign a label to this anomaly:**")
+                    label_options = [
+                        "Select label...",
+                        "Grid Frequency Deviation",
+                        "Grid Voltage Fluctuation",
+                        "Momentary Grid Loss",
+                        "Extended Grid Outage",
+                        "Main Controller Fault",
+                        "Emergency Brake Activation",
+                        "New Unknown Alarm Type",
+                        "False Positive — Ignore"
+                    ]
+                    selected_label = st.selectbox(
+                        "Label",
+                        label_options,
+                        key=f"label_{alarm_id}"
+                    )
+
+                    if st.button("✅ Submit Label", key=f"submit_{alarm_id}"):
+                        if selected_label != "Select label...":
+                            st.session_state.iso_detector.label_anomaly(alarm_id, selected_label)
+                            st.success(f"Labelled as: {selected_label}")
+                            st.rerun()
+                        else:
+                            st.warning("Please select a label first")
+        else:
+            st.success("✅ No anomalies pending review")
+    else:
+        st.info("Train the anomaly detector from the sidebar first (need 10+ alarms generated)")
+
 # ═══════════════════════════════════════════════════════════════════
 # TAB 8: OPC UA LIVE FEED
 # ═══════════════════════════════════════════════════════════════════
