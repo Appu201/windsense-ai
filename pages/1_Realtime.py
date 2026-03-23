@@ -378,7 +378,14 @@ def send_email_notification(recipient_email, recipient_name, alarm_type, turbine
         msg['From'] = sender_email
         msg['To'] = recipient_email
         msg['Subject'] = f"🚨 {severity} ALARM: {alarm_type} - Turbine {turbine_id}"
+<<<<<<< HEAD
         ack_url = f"http://localhost:8501/Realtime?ack={alarm_id}"
+=======
+
+        dashboard_url = get_dashboard_url()
+        ack_url = f"https://windsense-ai.streamlit.app/Realtime?ack={alarm_id}"
+
+>>>>>>> 0445e60 (fix: remove pyc and update realtime page)
         body = f"""
         <html><body style="font-family: Arial, sans-serif;">
             <div style="background: linear-gradient(135deg, #0D1B2A 0%, #1E3A5F 100%); padding: 20px; color: white;">
@@ -434,15 +441,35 @@ def send_email_notification(recipient_email, recipient_name, alarm_type, turbine
 
 def send_sms_notification(phone_number, recipient_name, alarm_type, turbine_id, severity, alarm_id):
     try:
+        from utils.sms_sender import send_real_sms
+        message_body = (
+            f"WINDSENSE AI ALERT\n"
+            f"Severity: {severity}\n"
+            f"Alarm: {alarm_type}\n"
+            f"Turbine: T-{turbine_id}\n"
+            f"ID: {alarm_id}\n"
+            f"Ack: https://windsense-ai.streamlit.app/Realtime?ack={alarm_id}"
+        )
+        success, result = send_real_sms(phone_number, message_body)
+
         if 'notification_log' not in st.session_state:
             st.session_state.notification_log = []
         st.session_state.notification_log.append({
             'time': datetime.now(), 'type': 'SMS',
             'recipient': f"{recipient_name} ({phone_number})",
+<<<<<<< HEAD
             'alarm_id': alarm_id, 'alarm_type': alarm_type, 'status': 'SENT ✓'
         })
         return True
     except:
+=======
+            'alarm_id': alarm_id,
+            'alarm_type': alarm_type,
+            'status': 'SENT ✓' if success else f'FAILED: {result}'
+        })
+        return success
+    except Exception as e:
+>>>>>>> 0445e60 (fix: remove pyc and update realtime page)
         return False
 
 def process_critical_alarm(alarm_type, turbine_id, alarm_id, severity='CRITICAL'):
