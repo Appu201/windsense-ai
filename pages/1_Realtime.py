@@ -728,6 +728,70 @@ def send_notification(alarm):
 # ═══════════════════════════════════════════════════════════════════
 # SIDEBAR
 # ═══════════════════════════════════════════════════════════════════
+<<<<<<< HEAD
+=======
+def send_notification(alarm):
+    """Send notification to appropriate stakeholders"""
+
+    dept_mapping = {
+        'Main Controller Fault': 'Software & Controls',
+        'Grid Frequency Deviation': 'Grid Operations',
+        'Emergency Brake Activation': 'Mechanical Safety',
+        'Generator Bearing Overheating': 'Mechanical - Rotating Equipment',
+        'Hydraulic Oil Contamination': 'Hydraulic Systems',
+        'Converter Circuit Fault': 'Electrical - Power Electronics',
+        'Pitch System Hydraulic Fault': 'Mechanical - Blade Systems',
+        'Yaw System Hydraulic Fault': 'Mechanical - Nacelle Systems'
+    }
+
+    department = dept_mapping.get(alarm['predicted_type'], 'General Maintenance')
+
+    stakeholder_info = STAKEHOLDERS.get(alarm['predicted_type'], STAKEHOLDERS.get('DEFAULT', {}))
+    primary = stakeholder_info.get('primary', {})
+
+    notification = {
+        'timestamp': alarm['timestamp'],
+        'alarm_id': alarm['alarm_id'],
+        'turbine': f"T-{alarm['asset_id']}",
+        'alarm_type': alarm['predicted_type'],
+        'priority': alarm['priority'],
+        'department': department,
+        'stakeholder': f"{primary.get('name', 'N/A')} ({primary.get('role', 'N/A')})",
+        'message': f"🚨 {alarm['priority']} ALERT: {alarm['predicted_type']} detected on Turbine {alarm['asset_id']}. Confidence: {alarm['confidence']:.1f}%. Immediate action required.",
+        'sent': True
+    }
+
+    st.session_state.notifications.insert(0, notification)
+
+    if len(st.session_state.notifications) > 50:
+        st.session_state.notifications = st.session_state.notifications[:50]
+
+    if alarm['priority'] == 'CRITICAL':
+        process_critical_alarm(
+            alarm['predicted_type'],
+            alarm['asset_id'],
+            alarm['alarm_id'],
+            alarm['priority']
+        )
+
+    return notification
+
+def train_isolation_forest():
+    if len(st.session_state.alarm_buffer) < 10:
+        return False
+    sensors = ['sensor_11_avg', 'sensor_12_avg', 'sensor_41_avg', 'power_30_avg', 'wind_speed_3_avg']
+    df = pd.DataFrame(st.session_state.alarm_buffer)
+    available = [s for s in sensors if s in df.columns]
+    if not available:
+        return False
+    X = df[available].fillna(0).values
+    iso = IsolationForest(contamination=0.1, random_state=42)
+    iso.fit(X)
+    st.session_state.isolation_forest_model = iso
+    st.session_state.isolation_forest_trained = True
+    st.session_state.isolation_forest_features = available
+    return True
+>>>>>>> 797a553 (feat: WhatsApp alerts via Twilio sandbox replacing Fast2SMS)
 
 with st.sidebar:
     try:
