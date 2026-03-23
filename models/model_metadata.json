@@ -1,4 +1,5 @@
 {
+<<<<<<< HEAD
   "accuracy": 0.4559,
   "n_samples_train": 40000,
   "n_samples_test": 10000,
@@ -6,6 +7,21 @@
   "n_classes": 14,
   "classes": [
     "Converter Circuit Fault",
+=======
+  "model_type": "RandomForestClassifier",
+  "n_estimators": 200,
+  "max_depth": 25,
+  "accuracy": 26.03,
+  "cv_mean_accuracy": 37.9,
+  "cv_std": 5.36,
+  "training_samples": "all episodes",
+  "n_features": 12,
+  "n_classes": 19,
+  "classes": [
+    "Converter Circuit Fault",
+    "Emergency Brake Activation",
+    "Extended Grid Outage",
+>>>>>>> 55311577d983769b61efb68407e7614d72adb055
     "Generator Bearing Overheating",
     "Generator Winding Temperature High",
     "Grid Frequency Deviation",
@@ -14,6 +30,7 @@
     "Hydraulic Oil Contamination",
     "Hydraulic Pressure Drop",
     "Hydraulic Valve Response Slow",
+<<<<<<< HEAD
     "Momentary Grid Loss",
     "Pitch System Hydraulic Fault",
     "Power Electronics Failure",
@@ -67,4 +84,31 @@
       "Importance": 0.06042098276745385
     }
   ]
+=======
+    "Main Controller Fault",
+    "Momentary Grid Loss",
+    "Overspeed Protection Triggered",
+    "Pitch System Hydraulic Fault",
+    "Power Electronics Failure",
+    "Safety System Activation",
+    "Transformer Oil Temperature High",
+    "Yaw System Hydraulic Fault"
+  ],
+  "training_date": "2026-03-23 22:00:38.984913",
+  "feature_names": [
+    "duration_hours",
+    "duration_minutes",
+    "is_long_duration",
+    "is_short_duration",
+    "is_medium_duration",
+    "hour_of_day",
+    "is_peak_hours",
+    "season",
+    "month",
+    "turbine_id_num",
+    "status_type_num",
+    "turbine_alarm_frequency"
+  ],
+  "phase": "Phase 2 retrain \u2014 duration + time features for grid alarm separation"
+>>>>>>> 55311577d983769b61efb68407e7614d72adb055
 }

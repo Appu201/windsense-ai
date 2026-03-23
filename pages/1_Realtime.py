@@ -16,6 +16,10 @@ from utils.email_queue import add_to_queue, flush_queue
 from utils.anomaly_detector import AnomalyDetector, save_anomaly_to_log, load_anomaly_log, mark_anomaly_reviewed
 from utils.opcua_simulator import OPCUASimulator
 from sklearn.ensemble import IsolationForest
+<<<<<<< HEAD
+=======
+from utils.isolation_forest import IsolationForestDetector
+>>>>>>> 55311577d983769b61efb68407e7614d72adb055
 
 st.set_page_config(
     page_title="WindSense AI - Intelligent Alarm Management",
@@ -378,7 +382,14 @@ def send_email_notification(recipient_email, recipient_name, alarm_type, turbine
         msg['From'] = sender_email
         msg['To'] = recipient_email
         msg['Subject'] = f"🚨 {severity} ALARM: {alarm_type} - Turbine {turbine_id}"
+<<<<<<< HEAD
         ack_url = f"http://localhost:8501/Realtime?ack={alarm_id}"
+=======
+
+        dashboard_url = get_dashboard_url() if 'get_dashboard_url' in globals() else "http://localhost:8501"
+        ack_url = f"{dashboard_url}/Realtime?ack={alarm_id}"
+
+>>>>>>> 55311577d983769b61efb68407e7614d72adb055
         body = f"""
         <html><body style="font-family: Arial, sans-serif;">
             <div style="background: linear-gradient(135deg, #0D1B2A 0%, #1E3A5F 100%); padding: 20px; color: white;">
@@ -402,7 +413,13 @@ def send_email_notification(recipient_email, recipient_name, alarm_type, turbine
             </div>
         </body></html>
         """
+<<<<<<< HEAD
         msg.attach(MIMEText(body, 'html'))
+=======
+
+        msg.attach(MIMEText(body, 'html'))
+
+>>>>>>> 55311577d983769b61efb68407e7614d72adb055
         try:
             _smtp = smtplib.SMTP('smtp.gmail.com', 587, timeout=5)
             _smtp.ehlo()
@@ -410,6 +427,7 @@ def send_email_notification(recipient_email, recipient_name, alarm_type, turbine
             _smtp.login('windsenseada@gmail.com', 'oaru xyta qlwi hpmw')
             _smtp.sendmail('windsenseada@gmail.com', recipient_email, msg.as_string())
             _smtp.quit()
+<<<<<<< HEAD
             if 'notification_log' not in st.session_state:
                 st.session_state.notification_log = []
             st.session_state.notification_log.append({
@@ -430,10 +448,46 @@ def send_email_notification(recipient_email, recipient_name, alarm_type, turbine
             })
             return False
     except Exception as e:
+=======
+
+            if 'notification_log' not in st.session_state:
+                st.session_state.notification_log = []
+
+            st.session_state.notification_log.append({
+                'time': datetime.now(),
+                'type': 'EMAIL',
+                'recipient': f"{recipient_name} ({recipient_email})",
+                'alarm_id': alarm_id,
+                'alarm_type': alarm_type,
+                'status': 'SENT ✓'
+            })
+
+            return True
+
+        except Exception:
+            add_to_queue(recipient_email, recipient_name, msg['Subject'], body, alarm_id)
+
+            if 'notification_log' not in st.session_state:
+                st.session_state.notification_log = []
+
+            st.session_state.notification_log.append({
+                'time': datetime.now(),
+                'type': 'EMAIL',
+                'recipient': f"{recipient_name} ({recipient_email})",
+                'alarm_id': alarm_id,
+                'alarm_type': alarm_type,
+                'status': 'QUEUED 🕐 (will send when online)'
+            })
+
+            return False
+
+    except Exception:
+>>>>>>> 55311577d983769b61efb68407e7614d72adb055
         return False
 
 def send_sms_notification(phone_number, recipient_name, alarm_type, turbine_id, severity, alarm_id):
     try:
+<<<<<<< HEAD
         if 'notification_log' not in st.session_state:
             st.session_state.notification_log = []
         st.session_state.notification_log.append({
@@ -443,6 +497,31 @@ def send_sms_notification(phone_number, recipient_name, alarm_type, turbine_id, 
         })
         return True
     except:
+=======
+        from utils.sms_sender import send_real_sms
+        message_body = (
+            f"WINDSENSE AI ALERT\n"
+            f"Severity: {severity}\n"
+            f"Alarm: {alarm_type}\n"
+            f"Turbine: T-{turbine_id}\n"
+            f"ID: {alarm_id}\n"
+            f"Ack: https://windsense-ai.streamlit.app/Realtime?ack={alarm_id}"
+        )
+        success, result = send_real_sms(phone_number, message_body)
+
+        if 'notification_log' not in st.session_state:
+            st.session_state.notification_log = []
+        st.session_state.notification_log.append({
+            'time': datetime.now(),
+            'type': 'SMS',
+            'recipient': f"{recipient_name} ({phone_number})",
+            'alarm_id': alarm_id,
+            'alarm_type': alarm_type,
+            'status': 'SENT ✓' if success else f'FAILED: {result}'
+        })
+        return success
+    except Exception as e:
+>>>>>>> 55311577d983769b61efb68407e7614d72adb055
         return False
 
 def process_critical_alarm(alarm_type, turbine_id, alarm_id, severity='CRITICAL'):
@@ -504,6 +583,10 @@ def load_historical_data():
 
 @st.cache_resource
 def load_ml_model():
+<<<<<<< HEAD
+=======
+    """Load trained ML model"""
+>>>>>>> 55311577d983769b61efb68407e7614d72adb055
     try:
         with open(MODEL_PATH + 'windsense_rf_model.pkl', 'rb') as f:
             model = pickle.load(f)
@@ -513,7 +596,10 @@ def load_ml_model():
             metadata = json.load(f)
         return model, features, metadata
     except Exception as e:
+<<<<<<< HEAD
         st.warning(f"Model not found. Using demo mode. Error: {e}")
+=======
+>>>>>>> 55311577d983769b61efb68407e7614d72adb055
         return None, None, None
 
 @st.cache_data
@@ -678,6 +764,7 @@ class RootCauseEngine:
 if 'rca_engine' not in st.session_state:
     st.session_state.rca_engine = RootCauseEngine()
 
+<<<<<<< HEAD
 def predict_alarm_type(alarm_data, model, features):
     if model is None:
         status = alarm_data['status_type_id']
@@ -694,6 +781,45 @@ def predict_alarm_type(alarm_data, model, features):
     return prediction, confidence
 
 def send_notification(alarm):
+=======
+if 'iso_detector' not in st.session_state:
+    st.session_state.iso_detector = IsolationForestDetector()
+
+def predict_alarm_type(alarm_data, model, features):
+    """Predict alarm type — handles both old sensor features and new duration features"""
+    if model is None:
+        # Demo fallback
+        status = alarm_data.get('status_type_id', 5.0)
+        if status == 5.0:
+            return 'Grid Frequency Deviation', 88.5
+        elif status == 4.0:
+            return 'Generator Bearing Overheating', 85.2
+        else:
+            return 'Hydraulic Oil Contamination', 83.7
+
+    try:
+        # Build feature vector — use 0 for any feature not present in alarm_data
+        feature_vector = []
+        for f in features:
+            feature_vector.append(alarm_data.get(f, 0))
+
+        X = np.array(feature_vector).reshape(1, -1)
+        prediction = model.predict(X)[0]
+        probabilities = model.predict_proba(X)[0]
+        confidence = max(probabilities) * 100
+        return prediction, confidence
+    except Exception:
+        status = alarm_data.get('status_type_id', 5.0)
+        if status == 5.0:
+            return 'Grid Frequency Deviation', 88.5
+        elif status == 4.0:
+            return 'Generator Bearing Overheating', 85.2
+        else:
+            return 'Hydraulic Oil Contamination', 83.7
+
+def send_notification(alarm):
+    """Send notification to appropriate stakeholders"""
+>>>>>>> 55311577d983769b61efb68407e7614d72adb055
     dept_mapping = {
         'Main Controller Fault': 'Software & Controls',
         'Grid Frequency Deviation': 'Grid Operations',
@@ -701,8 +827,13 @@ def send_notification(alarm):
         'Generator Bearing Overheating': 'Mechanical - Rotating Equipment',
         'Hydraulic Oil Contamination': 'Hydraulic Systems',
         'Converter Circuit Fault': 'Electrical - Power Electronics',
+<<<<<<< HEAD
         'Pitch System Fault': 'Mechanical - Blade Systems',
         'Yaw System Fault': 'Mechanical - Nacelle Systems'
+=======
+        'Pitch System Hydraulic Fault': 'Mechanical - Blade Systems',
+        'Yaw System Hydraulic Fault': 'Mechanical - Nacelle Systems'
+>>>>>>> 55311577d983769b61efb68407e7614d72adb055
     }
     department = dept_mapping.get(alarm['predicted_type'], 'General Maintenance')
     stakeholder_info = STAKEHOLDERS.get(alarm['predicted_type'], STAKEHOLDERS.get('DEFAULT', {}))
@@ -725,6 +856,25 @@ def send_notification(alarm):
         process_critical_alarm(alarm['predicted_type'], alarm['asset_id'], alarm['alarm_id'], alarm['priority'])
     return notification
 
+<<<<<<< HEAD
+=======
+def train_isolation_forest():
+    if len(st.session_state.alarm_buffer) < 10:
+        return False
+    sensors = ['sensor_11_avg', 'sensor_12_avg', 'sensor_41_avg', 'power_30_avg', 'wind_speed_3_avg']
+    df = pd.DataFrame(st.session_state.alarm_buffer)
+    available = [s for s in sensors if s in df.columns]
+    if not available:
+        return False
+    X = df[available].fillna(0).values
+    iso = IsolationForest(contamination=0.1, random_state=42)
+    iso.fit(X)
+    st.session_state.isolation_forest_model = iso
+    st.session_state.isolation_forest_trained = True
+    st.session_state.isolation_forest_features = available
+    return True
+
+>>>>>>> 55311577d983769b61efb68407e7614d72adb055
 # ═══════════════════════════════════════════════════════════════════
 # SIDEBAR
 # ═══════════════════════════════════════════════════════════════════
@@ -775,6 +925,7 @@ with st.sidebar:
         st.rerun()
 
     st.divider()
+<<<<<<< HEAD
     st.subheader("🔬 Anomaly Detection")
 
     if st.button("🧠 Train Anomaly Detector", use_container_width=True):
@@ -788,6 +939,25 @@ with st.sidebar:
         st.caption(f"✅ Model trained on {st.session_state.anomaly_detector.training_samples} alarms")
     else:
         st.caption("❌ Not trained yet. Generate 10+ alarms first.")
+=======
+
+    st.subheader("🔬 Anomaly Detection")
+
+    if st.button("🧠 Train Anomaly Detector", use_container_width=True):
+        if len(st.session_state.alarm_buffer) >= 10:
+            result = st.session_state.iso_detector.train(st.session_state.alarm_buffer)
+            if result:
+                st.success("✅ Anomaly detector trained!")
+            else:
+                st.warning("⚠️ Need at least 10 alarms first")
+        else:
+            st.warning(f"Need {10 - len(st.session_state.alarm_buffer)} more alarms")
+
+    if st.session_state.iso_detector.is_trained:
+        st.caption("🟢 Anomaly detector: ACTIVE")
+    else:
+        st.caption("🔴 Anomaly detector: not trained yet")
+>>>>>>> 55311577d983769b61efb68407e7614d72adb055
 
     st.divider()
 
