@@ -995,15 +995,15 @@ with tab1:
             send_notification(alarm)
 
         _col1, _col2, _col3 = st.columns(3)
-        if _col1.button("🔧 Yaw Fault",        key="test_yaw"):
+        if _col1.button("🔧 Yaw System Hydraulic Fault",        key="test_yaw"):
             _fire_test_alarm("Yaw System Hydraulic Fault")
             st.success("✅ Test alarm fired — check Tab 4 & Tab 7 for status")
             st.rerun()
-        if _col2.button("🌡️ Gen Overheat",     key="test_gen"):
+        if _col2.button("🌡️ Generator Bearing Overheating",     key="test_gen"):
             _fire_test_alarm("Generator Bearing Overheating")
             st.success("✅ Test alarm fired — check Tab 4 & Tab 7 for status")
             st.rerun()
-        if _col3.button("💻 Controller Fault", key="test_ctrl"):
+        if _col3.button("💻 Main Controller Fault", key="test_ctrl"):
             _fire_test_alarm("Main Controller Fault")
             st.success("✅ Test alarm fired — check Tab 4 & Tab 7 for status")
             st.rerun()
