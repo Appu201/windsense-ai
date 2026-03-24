@@ -1,51 +1,48 @@
-# utils/sms_sender.py — Twilio WhatsApp Sandbox alerts
-from twilio.rest import Client
+import os
 
-ACCOUNT_SID = "ACebe3c710683e01ebfd414dde9aec3b98"   # paste from twilio.com/console
-AUTH_TOKEN = "b1a7f277c4e926c05a1155b949dd5a3f"      # paste from twilio.com/console
+TWILIO_SID = "ACebe3c710683e01ebfd414dde9aec3b98"
+TWILIO_AUTH = "b1a7f277c4e926c05a1155b949dd5a3f"
+FROM_WA = "whatsapp:+14155238886"
 
-client = Client(ACCOUNT_SID, AUTH_TOKEN)
 
-TEAM_NUMBERS = [
-    "9284743112",  # Aparajithaa
-    "9123516325",  # Aarif
-    "8778838055",  # Divya
-]
-
-def send_whatsapp(phone, message):
-    """Send a WhatsApp message to one number via Twilio Sandbox."""
+def send_real_sms(to_number: str, message_body: str):
+    """
+    Send WhatsApp message via Twilio sandbox.
+    Normalises the number, strips any accidental 'whatsapp:' prefix
+    the caller may have already added, then sends.
+    Returns (success: bool, message: str)
+    """
     try:
-        msg = client.messages.create(
-            body=message,
-            from_='whatsapp:+14155238886',
-            to='whatsapp:+91' + phone
+        from twilio.rest import Client
+
+        # --- normalise destination number ---
+        clean_number = to_number.strip()
+        if clean_number.lower().startswith("whatsapp:"):
+            clean_number = clean_number[len("whatsapp:"):]
+        to_wa = f"whatsapp:{clean_number}"
+
+        client = Client(TWILIO_SID, TWILIO_AUTH)
+        message = client.messages.create(
+            body=message_body,
+            from_=FROM_WA,
+            to=to_wa,
         )
-        return True, msg.sid
+        return True, f"Sent: {message.sid}"
+
     except Exception as e:
-        return False, str(e)
+        error_msg = str(e)
 
-def send_alert_to_all(message):
-    """Send alert to all team members. Returns list of (number, success, response)."""
-    results = []
-    for num in TEAM_NUMBERS:
-        status, response = send_whatsapp(num, message)
-        results.append((num, status, response))
-    return results
-
-def send_real_sms(to_number, message_body):
-    """
-    Drop-in replacement for the old send_real_sms function.
-    Sends via WhatsApp instead of SMS.
-    to_number format: +919284743112 or 9284743112
-    """
-    try:
-        number = to_number.strip()
-        if number.startswith('+91'):
-            number = number[3:]
-        elif number.startswith('91') and len(number) == 12:
-            number = number[2:]
-
-        success, response = send_whatsapp(number, message_body)
-        return success, response
-    except Exception as e:
-        return False, str(e)
+        if "63016" in error_msg:
+            return (
+                False,
+                "Sandbox session expired — recipient must send "
+                "'join fruit-salt' to +14155238886 on WhatsApp first.",
+            )
+        elif "21608" in error_msg:
+            return False, "Number not verified for Twilio sandbox."
+        elif "Trial account" in error_msg or "20003" in error_msg:
+            return False, "Trial account limit — check Twilio console balance."
+        elif "21211" in error_msg or "21614" in error_msg:
+            return False, f"Invalid 'To' number format: {to_number}"
+        else:
+            return False, f"Twilio error: {error_msg}"
