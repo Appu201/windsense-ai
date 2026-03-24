@@ -1013,17 +1013,6 @@ with tab1:
         )
 # ===== END TEMP SIMULATOR =====
 
-        st.metric("🔴 Critical Alarms", critical_count, delta=f"+{critical_count} active")
-    with col2:
-        high_count = sum(1 for a in st.session_state.alarm_buffer if a['priority'] == 'HIGH')
-        st.metric("🟠 High Priority", high_count, delta=f"+{high_count} active")
-    with col3:
-        avg_conf = np.mean([a['confidence'] for a in st.session_state.alarm_buffer]) if st.session_state.alarm_buffer else 0
-        st.metric("🎯 Avg Confidence", f"{avg_conf:.1f}%")
-    with col4:
-        unique_turbines = len(set(a['asset_id'] for a in st.session_state.alarm_buffer)) if st.session_state.alarm_buffer else 0
-        st.metric("🌀 Turbines Affected", unique_turbines)
-
     st.divider()
     st.subheader("🔴 LIVE ALARM STREAM")
 
