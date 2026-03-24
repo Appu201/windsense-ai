@@ -169,6 +169,7 @@ query_params = st.query_params
 
 if 'ack' in query_params:
     alarm_id = query_params['ack']
+    channel = query_params.get('channel', 'email')
     existing_acks = load_acknowledgments()
     if alarm_id in existing_acks:
         prev_ack = existing_acks[alarm_id]
@@ -186,7 +187,8 @@ if 'ack' in query_params:
     else:
         ack_data = {
             'time': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-            'method': 'email_link',
+            'method': f'{channel}_link',
+            'channel': channel,
             'alarm_id': alarm_id
         }
         if save_acknowledgment(alarm_id, ack_data):
@@ -205,18 +207,6 @@ if 'ack' in query_params:
             st.balloons()
         else:
             st.error("❌ Failed to save acknowledgment.")
-
-    st.divider()
-    col1, col2, col3 = st.columns([1, 2, 1])
-    with col2:
-        st.markdown("""
-        <div style="text-align: center;">
-            <a href="http://localhost:8501" style="background-color: #00C9B1; color: white; padding: 12px 30px;
-            text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold;">
-                🏠 Return to Dashboard
-            </a>
-        </div>
-        """, unsafe_allow_html=True)
     st.stop()
 
 if not st.session_state.get('authenticated', False):
@@ -381,7 +371,7 @@ def send_email_notification(recipient_email, recipient_name, alarm_type, turbine
         msg['Subject'] = f"🚨 {severity} ALARM: {alarm_type} - Turbine {turbine_id}"
 
         dashboard_url = get_dashboard_url() if 'get_dashboard_url' in globals() else "http://localhost:8501"
-        ack_url = f"https://windsense-ai.streamlit.app/Realtime?ack={alarm_id}"
+        ack_url = f"https://windsense-ai.streamlit.app/Realtime?ack={alarm_id}&channel=email"
 
         body = f"""
         <html><body style="font-family: Arial, sans-serif;">
@@ -455,7 +445,7 @@ def send_sms_notification(phone_number, recipient_name, alarm_type, turbine_id, 
     try:
         from utils.sms_sender import send_real_sms
 
-        ack_url = f"https://windsense-ai.streamlit.app/Realtime?ack={alarm_id}"
+        ack_url = f"https://windsense-ai.streamlit.app/Realtime?ack={alarm_id}&channel=whatsapp"
 
         message_body = (
             f"WINDSENSE AI ALERT\n"
@@ -1871,11 +1861,16 @@ with tab7:
         for alarm_id, ack_info in st.session_state.acknowledged_alarms.items():
             alarm_data = ack_info.get('alarm_data', {})
             method = ack_info.get('method', 'unknown')
-            if method == 'email_link':
+            if method in ('email_link', 'whatsapp_link'):
+                channel_label = '📱 WhatsApp' if method == 'whatsapp_link' else '📧 Email'
                 ack_data.append({
-                    'Alarm ID': alarm_id, 'Type': 'Email Acknowledgment', 'Turbine': 'See Email',
-                    'Priority': 'CRITICAL', 'Acknowledged By': 'Email Link',
-                    'Ack Time': ack_info.get('time', 'N/A'), 'Action': 'Acknowledged via Email',
+                    'Alarm ID': alarm_id,
+                    'Type': f'{channel_label} Acknowledgment',
+                    'Turbine': 'See Notification',
+                    'Priority': 'CRITICAL',
+                    'Acknowledged By': f'{channel_label} Link',
+                    'Ack Time': ack_info.get('time', 'N/A'),
+                    'Action': f'Acknowledged via {channel_label}',
                     'Response Time (min)': 'N/A'
                 })
             else:
@@ -1922,8 +1917,11 @@ with tab7:
             st.plotly_chart(fig, use_container_width=True)
 
         email_acks = sum(1 for a in st.session_state.acknowledged_alarms.values() if a.get('method') == 'email_link')
+        wa_acks = sum(1 for a in st.session_state.acknowledged_alarms.values() if a.get('method') == 'whatsapp_link')
         if email_acks > 0:
-            st.info(f"📧 {email_acks} alarm(s) acknowledged via email link")
+            st.info(f"📧 {email_acks} alarm(s) acknowledged via Email link")
+        if wa_acks > 0:
+            st.info(f"📱 {wa_acks} alarm(s) acknowledged via WhatsApp link")
     else:
         st.info("No alarms have been acknowledged yet")
 
