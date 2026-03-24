@@ -76,7 +76,6 @@ st.markdown("""
         display: none !important;
     }
 
-
 </style>
 """, unsafe_allow_html=True)
 
@@ -117,7 +116,6 @@ with st.form("login_form"):
                 st.session_state.acknowledged_alarms = {}
 
                 st.success(f"✅ Welcome, {user_data['name']}!")
-                st.balloons()
                 import time
                 time.sleep(1)
                 st.switch_page("pages/1_Realtime.py")
