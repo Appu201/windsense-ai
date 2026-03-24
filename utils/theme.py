@@ -20,7 +20,7 @@ DARK_CSS = """
 
 /* ── Sidebar ── */
 [data-testid="stSidebar"] {
-    background: linear-gradient(180deg, #091520 0%, #0D1B2A 60%, #091520 100%) !important;
+    background: linear-gradient(180deg, #0D1B2A 0%, #1a2a3a 100%) !important;
     border-right: 1px solid #00C9B1 !important;
 }
 
@@ -52,8 +52,8 @@ DARK_CSS = """
 }
 
 .stTabs [aria-selected="true"] {
-    background-color: #112233 !important;
-    color: #00C9B1 !important;
+    background-color: #00C9B1 !important;
+    color: #0D1B2A !important;
     border-bottom: 3px solid #00C9B1 !important;
 }
 
@@ -88,8 +88,7 @@ DARK_CSS = """
 /* ── DataFrames ── */
 [data-testid="stDataFrame"] > div {
     background-color: #112233 !important;
-    border: 1px solid #1E3A5F !important;
-    border-radius: 6px;
+    border: 1px solid #00C9B1 !important;
 }
 
 .dvn-scroller {
@@ -226,7 +225,7 @@ td {
 
 /* ── Alert cards ── */
 .alert-critical {
-    background-color: #1a0505 !important;
+    background: linear-gradient(135deg, #1a0a0a 0%, #2d0f0f 100%) !important;
     border-left: 4px solid #FF4444 !important;
     padding: 10px 14px;
     border-radius: 0 6px 6px 0;
@@ -234,7 +233,7 @@ td {
     color: #E0E0E0 !important;
 }
 .alert-high {
-    background-color: #1a0c00 !important;
+    background: linear-gradient(135deg, #1a110a 0%, #2d1a0f 100%) !important;
     border-left: 4px solid #FFB347 !important;
     padding: 10px 14px;
     border-radius: 0 6px 6px 0;
@@ -242,7 +241,7 @@ td {
     color: #E0E0E0 !important;
 }
 .alert-medium {
-    background-color: #1a1500 !important;
+    background: linear-gradient(135deg, #1a1a0a 0%, #2d2a0f 100%) !important;
     border-left: 4px solid #FFD700 !important;
     padding: 10px 14px;
     border-radius: 0 6px 6px 0;
