@@ -770,6 +770,8 @@ if 'rca_engine' not in st.session_state:
 if 'iso_detector' not in st.session_state:
     st.session_state.iso_detector = IsolationForestDetector()
 
+st.session_state.anomaly_detector = st.session_state.iso_detector
+
 def predict_alarm_type(alarm_data, model, features):
     """Predict alarm type — handles both old sensor features and new duration features"""
     if model is None:
@@ -876,9 +878,16 @@ with st.sidebar:
 
     if st.button("🔄 Generate New Alarm", use_container_width=True):
         new_alarm = st.session_state.simulator.generate_alarm()
-        st.session_state.alarm_buffer.insert(0, new_alarm)
-        send_notification(new_alarm)
-        st.rerun()
+
+    if st.session_state.iso_detector.is_trained:
+    	result = st.session_state.iso_detector.predict(new_alarm)
+	new_alarm['is_anomaly'] = result.get('is_anomaly', False)
+    else:
+        new_alarm['is_anomaly'] = False
+
+st.session_state.alarm_buffer.insert(0, new_alarm)
+send_notification(new_alarm)
+st.rerun()
 
     auto_mode = st.checkbox("🤖 Auto-Generate (every 5s)")
 
@@ -1064,9 +1073,12 @@ with tab1:
 
             anomaly_tag = ""
             if st.session_state.anomaly_detector.is_trained:
-                result = st.session_state.anomaly_detector.predict(dict(row))
-                if result['is_anomaly']:
-                    anomaly_tag = "ANOMALY"
+                result = st.session_state.iso_detector.predict(dict(row))
+
+		row['is_anomaly'] = result.get('is_anomaly', False)
+
+            if result['is_anomaly']:
+    		anomaly_tag = "ANOMALY"
                     anomaly_count += 1
                     save_anomaly_to_log(row.get('alarm_id', 'N/A'), dict(row), result)
                 else:
