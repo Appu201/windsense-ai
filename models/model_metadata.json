@@ -1,13 +1,4 @@
 {
-<<<<<<< HEAD
-  "accuracy": 0.4559,
-  "n_samples_train": 40000,
-  "n_samples_test": 10000,
-  "n_features": 11,
-  "n_classes": 14,
-  "classes": [
-    "Converter Circuit Fault",
-=======
   "model_type": "RandomForestClassifier",
   "n_estimators": 200,
   "max_depth": 25,
@@ -21,7 +12,6 @@
     "Converter Circuit Fault",
     "Emergency Brake Activation",
     "Extended Grid Outage",
->>>>>>> 55311577d983769b61efb68407e7614d72adb055
     "Generator Bearing Overheating",
     "Generator Winding Temperature High",
     "Grid Frequency Deviation",
@@ -30,61 +20,6 @@
     "Hydraulic Oil Contamination",
     "Hydraulic Pressure Drop",
     "Hydraulic Valve Response Slow",
-<<<<<<< HEAD
-    "Momentary Grid Loss",
-    "Pitch System Hydraulic Fault",
-    "Power Electronics Failure",
-    "Transformer Oil Temperature High",
-    "Yaw System Hydraulic Fault"
-  ],
-  "training_date": "2026-02-09",
-  "feature_importance": [
-    {
-      "Feature": "power_30_avg",
-      "Importance": 0.16588546014244862
-    },
-    {
-      "Feature": "sensor_18_avg",
-      "Importance": 0.15758405949897616
-    },
-    {
-      "Feature": "wind_speed_3_avg",
-      "Importance": 0.1026276065261348
-    },
-    {
-      "Feature": "sensor_11_avg",
-      "Importance": 0.08692104054647862
-    },
-    {
-      "Feature": "sensor_40_avg",
-      "Importance": 0.08292626445291974
-    },
-    {
-      "Feature": "sensor_41_avg",
-      "Importance": 0.08054518759340133
-    },
-    {
-      "Feature": "sensor_13_avg",
-      "Importance": 0.06927113130604773
-    },
-    {
-      "Feature": "sensor_14_avg",
-      "Importance": 0.06753473355319177
-    },
-    {
-      "Feature": "sensor_39_avg",
-      "Importance": 0.06569715180843479
-    },
-    {
-      "Feature": "sensor_38_avg",
-      "Importance": 0.06058638180451267
-    },
-    {
-      "Feature": "sensor_12_avg",
-      "Importance": 0.06042098276745385
-    }
-  ]
-=======
     "Main Controller Fault",
     "Momentary Grid Loss",
     "Overspeed Protection Triggered",
@@ -109,6 +44,5 @@
     "status_type_num",
     "turbine_alarm_frequency"
   ],
-  "phase": "Phase 2 retrain \u2014 duration + time features for grid alarm separation"
->>>>>>> 55311577d983769b61efb68407e7614d72adb055
+  "phase": "Phase 2 retrain — duration + time features for grid alarm separation"
 }

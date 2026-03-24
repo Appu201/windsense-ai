@@ -16,10 +16,7 @@ from utils.email_queue import add_to_queue, flush_queue
 from utils.anomaly_detector import AnomalyDetector, save_anomaly_to_log, load_anomaly_log, mark_anomaly_reviewed
 from utils.opcua_simulator import OPCUASimulator
 from sklearn.ensemble import IsolationForest
-<<<<<<< HEAD
-=======
 from utils.isolation_forest import IsolationForestDetector
->>>>>>> 55311577d983769b61efb68407e7614d72adb055
 
 st.set_page_config(
     page_title="WindSense AI - Intelligent Alarm Management",
@@ -382,14 +379,10 @@ def send_email_notification(recipient_email, recipient_name, alarm_type, turbine
         msg['From'] = sender_email
         msg['To'] = recipient_email
         msg['Subject'] = f"🚨 {severity} ALARM: {alarm_type} - Turbine {turbine_id}"
-<<<<<<< HEAD
-        ack_url = f"http://localhost:8501/Realtime?ack={alarm_id}"
-=======
 
         dashboard_url = get_dashboard_url() if 'get_dashboard_url' in globals() else "http://localhost:8501"
         ack_url = f"{dashboard_url}/Realtime?ack={alarm_id}"
 
->>>>>>> 55311577d983769b61efb68407e7614d72adb055
         body = f"""
         <html><body style="font-family: Arial, sans-serif;">
             <div style="background: linear-gradient(135deg, #0D1B2A 0%, #1E3A5F 100%); padding: 20px; color: white;">
@@ -413,13 +406,8 @@ def send_email_notification(recipient_email, recipient_name, alarm_type, turbine
             </div>
         </body></html>
         """
-<<<<<<< HEAD
-        msg.attach(MIMEText(body, 'html'))
-=======
-
         msg.attach(MIMEText(body, 'html'))
 
->>>>>>> 55311577d983769b61efb68407e7614d72adb055
         try:
             _smtp = smtplib.SMTP('smtp.gmail.com', 587, timeout=5)
             _smtp.ehlo()
@@ -427,28 +415,6 @@ def send_email_notification(recipient_email, recipient_name, alarm_type, turbine
             _smtp.login('windsenseada@gmail.com', 'oaru xyta qlwi hpmw')
             _smtp.sendmail('windsenseada@gmail.com', recipient_email, msg.as_string())
             _smtp.quit()
-<<<<<<< HEAD
-            if 'notification_log' not in st.session_state:
-                st.session_state.notification_log = []
-            st.session_state.notification_log.append({
-                'time': datetime.now(), 'type': 'EMAIL',
-                'recipient': f"{recipient_name} ({recipient_email})",
-                'alarm_id': alarm_id, 'alarm_type': alarm_type, 'status': 'SENT ✓'
-            })
-            return True
-        except Exception as smtp_err:
-            add_to_queue(recipient_email, recipient_name, msg['Subject'], body, alarm_id)
-            if 'notification_log' not in st.session_state:
-                st.session_state.notification_log = []
-            st.session_state.notification_log.append({
-                'time': datetime.now(), 'type': 'EMAIL',
-                'recipient': f"{recipient_name} ({recipient_email})",
-                'alarm_id': alarm_id, 'alarm_type': alarm_type,
-                'status': 'QUEUED 🕐 (will send when online)'
-            })
-            return False
-    except Exception as e:
-=======
 
             if 'notification_log' not in st.session_state:
                 st.session_state.notification_log = []
@@ -482,65 +448,116 @@ def send_email_notification(recipient_email, recipient_name, alarm_type, turbine
             return False
 
     except Exception:
->>>>>>> 55311577d983769b61efb68407e7614d72adb055
         return False
 
 def send_sms_notification(phone_number, recipient_name, alarm_type, turbine_id, severity, alarm_id):
+    """Send WhatsApp notification via Twilio sandbox and log the result."""
     try:
-<<<<<<< HEAD
-        if 'notification_log' not in st.session_state:
-            st.session_state.notification_log = []
-        st.session_state.notification_log.append({
-            'time': datetime.now(), 'type': 'SMS',
-            'recipient': f"{recipient_name} ({phone_number})",
-            'alarm_id': alarm_id, 'alarm_type': alarm_type, 'status': 'SENT ✓'
-        })
-        return True
-    except:
-=======
         from utils.sms_sender import send_real_sms
+
+        ack_url = f"https://windsense-ai.streamlit.app/Realtime?ack={alarm_id}"
+
         message_body = (
             f"WINDSENSE AI ALERT\n"
             f"Severity: {severity}\n"
             f"Alarm: {alarm_type}\n"
             f"Turbine: T-{turbine_id}\n"
             f"ID: {alarm_id}\n"
-            f"Ack: https://windsense-ai.streamlit.app/Realtime?ack={alarm_id}"
+            f"Ack: {ack_url}"
         )
+
         success, result = send_real_sms(phone_number, message_body)
 
-        if 'notification_log' not in st.session_state:
+        if "notification_log" not in st.session_state:
+            st.session_state.notification_log = []
+
+        st.session_state.notification_log.append({
+            "time": datetime.now(),
+            "type": "WHATSAPP",
+            "recipient": f"{recipient_name} ({phone_number})",
+            "alarm_id": alarm_id,
+            "alarm_type": alarm_type,
+            "status": "SENT ✓" if success else f"FAILED: {result}",
+        })
+
+        return success
+
+    except Exception as e:
+        if "notification_log" not in st.session_state:
             st.session_state.notification_log = []
         st.session_state.notification_log.append({
-            'time': datetime.now(),
-            'type': 'SMS',
-            'recipient': f"{recipient_name} ({phone_number})",
-            'alarm_id': alarm_id,
-            'alarm_type': alarm_type,
-            'status': 'SENT ✓' if success else f'FAILED: {result}'
+            "time": datetime.now(),
+            "type": "WHATSAPP",
+            "recipient": f"{recipient_name} ({phone_number})",
+            "alarm_id": alarm_id,
+            "alarm_type": alarm_type,
+            "status": f"EXCEPTION: {e}",
         })
-        return success
-    except Exception as e:
->>>>>>> 55311577d983769b61efb68407e7614d72adb055
         return False
 
+
 def process_critical_alarm(alarm_type, turbine_id, alarm_id, severity='CRITICAL'):
+    """
+    Process a critical alarm and notify ONLY the correct primary contact
+    for that alarm type. No broadcast. No duplicates.
+    Secondary contact gets email only (no SMS). Management escalation
+    is handled separately by check_and_escalate().
+    """
     if 'active_critical_alarms' not in st.session_state:
         st.session_state.active_critical_alarms = {}
+
+    # Prevent duplicate processing if alarm already active
+    if alarm_id in st.session_state.active_critical_alarms:
+        return alarm_id
+
     st.session_state.active_critical_alarms[alarm_id] = {
-        'type': alarm_type, 'turbine_id': turbine_id,
-        'timestamp': datetime.now(), 'severity': severity, 'notified': []
+        'type': alarm_type,
+        'turbine_id': turbine_id,
+        'timestamp': datetime.now(),
+        'severity': severity,
+        'notified': []
     }
+
     stakeholder_info = STAKEHOLDERS.get(alarm_type, STAKEHOLDERS.get('DEFAULT', {}))
+
+    # ── Primary contact: Email + WhatsApp ──────────────────────────
     primary = stakeholder_info.get('primary', {})
     if primary:
-        send_email_notification(primary['email'], primary['name'], alarm_type, turbine_id, severity, alarm_id)
-        send_sms_notification(primary['phone'], primary['name'], alarm_type, turbine_id, severity, alarm_id)
-        st.session_state.active_critical_alarms[alarm_id]['notified'].append(f"Primary: {primary['name']}")
+        send_email_notification(
+            primary['email'],
+            primary['name'],
+            alarm_type,
+            turbine_id,
+            severity,
+            alarm_id
+        )
+        send_sms_notification(
+            primary['phone'],
+            primary['name'],
+            alarm_type,
+            turbine_id,
+            severity,
+            alarm_id
+        )
+        st.session_state.active_critical_alarms[alarm_id]['notified'].append(
+            f"Primary: {primary['name']}"
+        )
+
+    # ── Secondary contact: Email only (no SMS) ─────────────────────
     secondary = stakeholder_info.get('secondary', {})
     if secondary:
-        send_email_notification(secondary['email'], secondary['name'], alarm_type, turbine_id, severity, alarm_id)
-        st.session_state.active_critical_alarms[alarm_id]['notified'].append(f"Secondary: {secondary['name']}")
+        send_email_notification(
+            secondary['email'],
+            secondary['name'],
+            alarm_type,
+            turbine_id,
+            severity,
+            alarm_id
+        )
+        st.session_state.active_critical_alarms[alarm_id]['notified'].append(
+            f"Secondary: {secondary['name']}"
+        )
+
     return alarm_id
 
 def check_and_escalate():
@@ -583,10 +600,8 @@ def load_historical_data():
 
 @st.cache_resource
 def load_ml_model():
-<<<<<<< HEAD
-=======
     """Load trained ML model"""
->>>>>>> 55311577d983769b61efb68407e7614d72adb055
+
     try:
         with open(MODEL_PATH + 'windsense_rf_model.pkl', 'rb') as f:
             model = pickle.load(f)
@@ -596,10 +611,8 @@ def load_ml_model():
             metadata = json.load(f)
         return model, features, metadata
     except Exception as e:
-<<<<<<< HEAD
         st.warning(f"Model not found. Using demo mode. Error: {e}")
-=======
->>>>>>> 55311577d983769b61efb68407e7614d72adb055
+
         return None, None, None
 
 @st.cache_data
@@ -764,31 +777,12 @@ class RootCauseEngine:
 if 'rca_engine' not in st.session_state:
     st.session_state.rca_engine = RootCauseEngine()
 
-<<<<<<< HEAD
-def predict_alarm_type(alarm_data, model, features):
-    if model is None:
-        status = alarm_data['status_type_id']
-        if status == 5.0:
-            return 'Grid Frequency Deviation', 92.5
-        elif status == 4.0:
-            return 'Emergency Brake Activation', 88.3
-        else:
-            return 'Hydraulic System Fault', 85.7
-    X = alarm_data[features].values.reshape(1, -1)
-    prediction = model.predict(X)[0]
-    probabilities = model.predict_proba(X)[0]
-    confidence = max(probabilities) * 100
-    return prediction, confidence
-
-def send_notification(alarm):
-=======
 if 'iso_detector' not in st.session_state:
     st.session_state.iso_detector = IsolationForestDetector()
 
 def predict_alarm_type(alarm_data, model, features):
     """Predict alarm type — handles both old sensor features and new duration features"""
     if model is None:
-        # Demo fallback
         status = alarm_data.get('status_type_id', 5.0)
         if status == 5.0:
             return 'Grid Frequency Deviation', 88.5
@@ -796,13 +790,10 @@ def predict_alarm_type(alarm_data, model, features):
             return 'Generator Bearing Overheating', 85.2
         else:
             return 'Hydraulic Oil Contamination', 83.7
-
     try:
-        # Build feature vector — use 0 for any feature not present in alarm_data
         feature_vector = []
         for f in features:
             feature_vector.append(alarm_data.get(f, 0))
-
         X = np.array(feature_vector).reshape(1, -1)
         prediction = model.predict(X)[0]
         probabilities = model.predict_proba(X)[0]
@@ -819,7 +810,6 @@ def predict_alarm_type(alarm_data, model, features):
 
 def send_notification(alarm):
     """Send notification to appropriate stakeholders"""
->>>>>>> 55311577d983769b61efb68407e7614d72adb055
     dept_mapping = {
         'Main Controller Fault': 'Software & Controls',
         'Grid Frequency Deviation': 'Grid Operations',
@@ -827,13 +817,9 @@ def send_notification(alarm):
         'Generator Bearing Overheating': 'Mechanical - Rotating Equipment',
         'Hydraulic Oil Contamination': 'Hydraulic Systems',
         'Converter Circuit Fault': 'Electrical - Power Electronics',
-<<<<<<< HEAD
         'Pitch System Fault': 'Mechanical - Blade Systems',
         'Yaw System Fault': 'Mechanical - Nacelle Systems'
-=======
-        'Pitch System Hydraulic Fault': 'Mechanical - Blade Systems',
-        'Yaw System Hydraulic Fault': 'Mechanical - Nacelle Systems'
->>>>>>> 55311577d983769b61efb68407e7614d72adb055
+
     }
     department = dept_mapping.get(alarm['predicted_type'], 'General Maintenance')
     stakeholder_info = STAKEHOLDERS.get(alarm['predicted_type'], STAKEHOLDERS.get('DEFAULT', {}))
@@ -856,8 +842,6 @@ def send_notification(alarm):
         process_critical_alarm(alarm['predicted_type'], alarm['asset_id'], alarm['alarm_id'], alarm['priority'])
     return notification
 
-<<<<<<< HEAD
-=======
 def train_isolation_forest():
     if len(st.session_state.alarm_buffer) < 10:
         return False
@@ -873,8 +857,6 @@ def train_isolation_forest():
     st.session_state.isolation_forest_trained = True
     st.session_state.isolation_forest_features = available
     return True
-
->>>>>>> 55311577d983769b61efb68407e7614d72adb055
 # ═══════════════════════════════════════════════════════════════════
 # SIDEBAR
 # ═══════════════════════════════════════════════════════════════════
@@ -925,21 +907,6 @@ with st.sidebar:
         st.rerun()
 
     st.divider()
-<<<<<<< HEAD
-    st.subheader("🔬 Anomaly Detection")
-
-    if st.button("🧠 Train Anomaly Detector", use_container_width=True):
-        success, msg = st.session_state.anomaly_detector.train(st.session_state.alarm_buffer)
-        if success:
-            st.success(f"✅ {msg}")
-        else:
-            st.warning(f"⚠️ {msg}")
-
-    if st.session_state.anomaly_detector.is_trained:
-        st.caption(f"✅ Model trained on {st.session_state.anomaly_detector.training_samples} alarms")
-    else:
-        st.caption("❌ Not trained yet. Generate 10+ alarms first.")
-=======
 
     st.subheader("🔬 Anomaly Detection")
 
@@ -957,7 +924,7 @@ with st.sidebar:
         st.caption("🟢 Anomaly detector: ACTIVE")
     else:
         st.caption("🔴 Anomaly detector: not trained yet")
->>>>>>> 55311577d983769b61efb68407e7614d72adb055
+
 
     st.divider()
 
@@ -990,6 +957,72 @@ with tab1:
     col1, col2, col3, col4 = st.columns(4)
     with col1:
         critical_count = sum(1 for a in st.session_state.alarm_buffer if a['priority'] == 'CRITICAL')
+
+# ===== TEMP CRITICAL ALARM SIMULATOR =====
+    if st.checkbox("🧪 Enable Critical Alarm Simulator (Test Notifications)"):
+        import random as _random
+ 
+        _TEST_ALARMS = {
+            "Yaw System Hydraulic Fault":    ("Aparajithaa", "+919284743112", "ts.aparajithaa@gmail.com"),
+            "Generator Bearing Overheating": ("Aarif",       "+919123516325", "muhammadhaarif2000@gmail.com"),
+            "Main Controller Fault":         ("Divya",       "+918778838055", "divyajay.1612@gmail.com"),
+        }
+ 
+        def _fire_test_alarm(alarm_type):
+            """
+            Creates a test alarm, injects it into the live buffer,
+            then uses the EXISTING notification pipeline so that
+            email, WhatsApp, and acknowledgement all work identically
+            to a real alarm.
+            """
+            alarm_id  = f"TEST-{_random.randint(1000, 9999)}"
+            turbine   = _random.randint(1, 5)
+            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+ 
+            alarm = {
+                "alarm_id":        alarm_id,
+                "timestamp":       timestamp,
+                "asset_id":        turbine,
+                "priority":        "CRITICAL",
+                "predicted_type":  alarm_type,
+                "confidence":      round(_random.uniform(92, 99), 1),
+                "status_type_id":  5.0,
+                "sensor_11_avg":   round(_random.uniform(40, 80), 2),
+                "sensor_12_avg":   round(_random.uniform(35, 75), 2),
+                "sensor_41_avg":   round(_random.uniform(25, 65), 2),
+                "power_30_avg":    round(_random.uniform(100, 500), 2),
+                "wind_speed_3_avg": round(_random.uniform(3, 15), 2),
+            }
+ 
+            # Inject into live alarm buffer so Tab 1 / Tab 7 see it
+            st.session_state.alarm_buffer.insert(0, alarm)
+ 
+            # ── use the EXISTING pipeline ──────────────────────────
+            # This populates active_critical_alarms, sends Email + WhatsApp
+            # to primary/secondary/escalation contacts AND the demo broadcast.
+            process_critical_alarm(alarm_type, turbine, alarm_id, severity="CRITICAL")
+ 
+            # Also fire the notification-log entry used by Tab 4
+            send_notification(alarm)
+ 
+        _col1, _col2, _col3 = st.columns(3)
+        if _col1.button("🔧 Yaw Fault",        key="test_yaw"):
+            _fire_test_alarm("Yaw System Hydraulic Fault")
+            st.success("✅ Test alarm fired — check Tab 4 & Tab 7 for status")
+            st.rerun()
+        if _col2.button("🌡️ Gen Overheat",     key="test_gen"):
+            _fire_test_alarm("Generator Bearing Overheating")
+            st.success("✅ Test alarm fired — check Tab 4 & Tab 7 for status")
+            st.rerun()
+        if _col3.button("💻 Controller Fault", key="test_ctrl"):
+            _fire_test_alarm("Main Controller Fault")
+            st.success("✅ Test alarm fired — check Tab 4 & Tab 7 for status")
+            st.rerun()
+ 
+        st.caption(
+            "Uses the live pipeline: Email ✉️ + WhatsApp 📲 → Acknowledge link updates Tab 7 automatically."
+        )    # ===== END TEMP SIMULATOR =====
+
         st.metric("🔴 Critical Alarms", critical_count, delta=f"+{critical_count} active")
     with col2:
         high_count = sum(1 for a in st.session_state.alarm_buffer if a['priority'] == 'HIGH')
