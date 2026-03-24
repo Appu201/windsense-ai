@@ -107,7 +107,7 @@ class OPCUASimulator:
             "value": round(grid_freq, 4),
             "unit": "Hz",
             "quality": "Good",
-            "timestamp": timestamp.isoformat(),
+            "timestamp": timestamp.strftime('%Y-%m-%d %H:%M:%S'),
             "status": "NORMAL" if grid_ok else "ALARM"
         })
 
@@ -122,14 +122,15 @@ class OPCUASimulator:
         })
 
         readings.append({
-            "node_id": "ns=2;s=WindFarm.Grid.Status",
-            "description": "Grid — Connection Status",
-            "value": "CONNECTED" if grid_ok else "FAULT",
+   	    "node_id": f"ns=2;s=WindFarm.Turbine{turbine_id}.Status",
+            "description": f"Turbine {turbine_id} — Operational Status",
+            "value": turbine_status,
             "unit": "",
             "quality": "Good",
             "timestamp": timestamp.isoformat(),
-            "status": "NORMAL" if grid_ok else "ALARM"
-        })
+            "status": turbine_status,
+            "alarm_active": turbine_id in self.active_alarms
+	})
 
         # Wind speed
         wind_speed = max(3.0, self._add_noise(self.base_wind_speed, 0.08))
