@@ -947,28 +947,34 @@ with tab1:
     col1, col2, col3, col4 = st.columns(4)
     with col1:
         critical_count = sum(1 for a in st.session_state.alarm_buffer if a['priority'] == 'CRITICAL')
+        st.metric("🔴 Critical Alarms", critical_count, delta=f"+{critical_count} active")
+    with col2:
+        high_count = sum(1 for a in st.session_state.alarm_buffer if a['priority'] == 'HIGH')
+        st.metric("🟠 High Priority", high_count, delta=f"+{high_count} active")
+    with col3:
+        avg_conf = np.mean([a['confidence'] for a in st.session_state.alarm_buffer]) if st.session_state.alarm_buffer else 0
+        st.metric("🎯 Avg Confidence", f"{avg_conf:.1f}%")
+    with col4:
+        unique_turbines = len(set(a['asset_id'] for a in st.session_state.alarm_buffer)) if st.session_state.alarm_buffer else 0
+        st.metric("🌀 Turbines Affected", unique_turbines)
+
+    st.divider()
 
 # ===== TEMP CRITICAL ALARM SIMULATOR =====
     if st.checkbox("🧪 Enable Critical Alarm Simulator (Test Notifications)"):
         import random as _random
- 
+
         _TEST_ALARMS = {
             "Yaw System Hydraulic Fault":    ("Aparajithaa", "+919284743112", "ts.aparajithaa@gmail.com"),
             "Generator Bearing Overheating": ("Aarif",       "+919123516325", "muhammadhaarif2000@gmail.com"),
             "Main Controller Fault":         ("Divya",       "+918778838055", "divyajay.1612@gmail.com"),
         }
- 
+
         def _fire_test_alarm(alarm_type):
-            """
-            Creates a test alarm, injects it into the live buffer,
-            then uses the EXISTING notification pipeline so that
-            email, WhatsApp, and acknowledgement all work identically
-            to a real alarm.
-            """
             alarm_id  = f"TEST-{_random.randint(1000, 9999)}"
             turbine   = _random.randint(1, 5)
             timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
- 
+
             alarm = {
                 "alarm_id":        alarm_id,
                 "timestamp":       timestamp,
@@ -983,18 +989,11 @@ with tab1:
                 "power_30_avg":    round(_random.uniform(100, 500), 2),
                 "wind_speed_3_avg": round(_random.uniform(3, 15), 2),
             }
- 
-            # Inject into live alarm buffer so Tab 1 / Tab 7 see it
+
             st.session_state.alarm_buffer.insert(0, alarm)
- 
-            # ── use the EXISTING pipeline ──────────────────────────
-            # This populates active_critical_alarms, sends Email + WhatsApp
-            # to primary/secondary/escalation contacts AND the demo broadcast.
             process_critical_alarm(alarm_type, turbine, alarm_id, severity="CRITICAL")
- 
-            # Also fire the notification-log entry used by Tab 4
             send_notification(alarm)
- 
+
         _col1, _col2, _col3 = st.columns(3)
         if _col1.button("🔧 Yaw Fault",        key="test_yaw"):
             _fire_test_alarm("Yaw System Hydraulic Fault")
@@ -1008,10 +1007,11 @@ with tab1:
             _fire_test_alarm("Main Controller Fault")
             st.success("✅ Test alarm fired — check Tab 4 & Tab 7 for status")
             st.rerun()
- 
+
         st.caption(
             "Uses the live pipeline: Email ✉️ + WhatsApp 📲 → Acknowledge link updates Tab 7 automatically."
-        )    # ===== END TEMP SIMULATOR =====
+        )
+# ===== END TEMP SIMULATOR =====
 
         st.metric("🔴 Critical Alarms", critical_count, delta=f"+{critical_count} active")
     with col2:
