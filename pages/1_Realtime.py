@@ -381,7 +381,7 @@ def send_email_notification(recipient_email, recipient_name, alarm_type, turbine
         msg['Subject'] = f"🚨 {severity} ALARM: {alarm_type} - Turbine {turbine_id}"
 
         dashboard_url = get_dashboard_url() if 'get_dashboard_url' in globals() else "http://localhost:8501"
-        ack_url = f"{dashboard_url}/Realtime?ack={alarm_id}"
+        ack_url = f"https://windsense-ai.streamlit.app/Realtime?ack={alarm_id}"
 
         body = f"""
         <html><body style="font-family: Arial, sans-serif;">
