@@ -877,17 +877,17 @@ with st.sidebar:
     st.subheader("⚡ Live Simulation")
 
     if st.button("🔄 Generate New Alarm", use_container_width=True):
-        new_alarm = st.session_state.simulator.generate_alarm()
+    new_alarm = st.session_state.simulator.generate_alarm()
 
     if st.session_state.iso_detector.is_trained:
-    	result = st.session_state.iso_detector.predict(new_alarm)
-	new_alarm['is_anomaly'] = result.get('is_anomaly', False)
+        result = st.session_state.iso_detector.predict(new_alarm)
+        new_alarm['is_anomaly'] = result.get('is_anomaly', False)
     else:
         new_alarm['is_anomaly'] = False
 
-st.session_state.alarm_buffer.insert(0, new_alarm)
-send_notification(new_alarm)
-st.rerun()
+    st.session_state.alarm_buffer.insert(0, new_alarm)
+    send_notification(new_alarm)
+    st.rerun()
 
     auto_mode = st.checkbox("🤖 Auto-Generate (every 5s)")
 
@@ -1072,13 +1072,18 @@ with tab1:
                 flag_status = "HIGH Confidence"
 
             anomaly_tag = ""
-            if st.session_state.anomaly_detector.is_trained:
-                result = st.session_state.iso_detector.predict(dict(row))
+	    if st.session_state.iso_detector.is_trained:
+            	result = st.session_state.iso_detector.predict(dict(row))
+    		row['is_anomaly'] = result.get('is_anomaly', False)
 
-		row['is_anomaly'] = result.get('is_anomaly', False)
-
-            if result['is_anomaly']:
-    		anomaly_tag = "ANOMALY"
+    	    if result['is_anomaly']:
+        	anomaly_tag = "ANOMALY"
+        	anomaly_count += 1
+        	save_anomaly_to_log(row.get('alarm_id', 'N/A'), dict(row), result)
+    	    else:
+        	anomaly_tag = "Known"
+	else:
+    	    anomaly_tag = "-"
                     anomaly_count += 1
                     save_anomaly_to_log(row.get('alarm_id', 'N/A'), dict(row), result)
                 else:
