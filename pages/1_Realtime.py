@@ -2021,6 +2021,24 @@ with tab8:
     display_readings.columns = ['Node ID', 'Description', 'Value', 'Unit', 'Status', 'Timestamp']
     st.table(display_readings)
 
+    # Highlight alarming nodes
+    alarming_nodes = [r for r in readings if r.get('alarm_active', False)]
+    if alarming_nodes:
+        st.markdown("**🚨 Active Alarm Nodes:**")
+        for node in alarming_nodes:
+            st.markdown(f"""
+            <div style="background: linear-gradient(135deg, #8B0000, #cc0000);
+                        color: white; padding: 0.6rem 1rem; border-radius: 6px;
+                        border-left: 4px solid #ff4444; margin: 0.3rem 0;">
+                <strong>{node.get('node_id', 'Unknown')}</strong> —
+                {node.get('description', '')} |
+                Value: {node.get('value', 'N/A')} {node.get('unit', '')} |
+                Status: {node.get('status', 'N/A')}
+            </div>
+            """, unsafe_allow_html=True)
+    else:
+        st.success("✅ All OPC UA nodes operating normally")
+
     st.divider()
     col_r1, col_r2, col_r3 = st.columns([1, 2, 1])
     with col_r2:
