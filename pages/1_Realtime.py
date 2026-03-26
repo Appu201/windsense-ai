@@ -1071,8 +1071,9 @@ with tab1:
 
             anomaly_tag = ""
             if st.session_state.iso_detector.is_trained:
-                result = st.session_state.iso_detector.predict(dict(row))
-                row['is_anomaly'] = result.get('is_anomaly', False)
+    		is_anomaly, anomaly_score = st.session_state.iso_detector.predict(dict(row))
+    		row['is_anomaly'] = is_anomaly
+    		row['anomaly_score'] = anomaly_score
                 if result['is_anomaly']:
                     anomaly_tag = "ANOMALY"
                     anomaly_count += 1

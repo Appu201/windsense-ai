@@ -1,156 +1,121 @@
 # utils/isolation_forest.py
-# Phase 2: Isolation Forest anomaly detection
-# Detects new/unseen alarm patterns not in the 19 trained classes
-# Integrates with live alarm buffer from dashboard
+# WindSense AI — Isolation Forest Anomaly Detector
+# Person B (Divya) — FINAL VERSION
 
 import numpy as np
-import pandas as pd
-from sklearn.ensemble import IsolationForest
 import json
 import os
-
-BASE_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
-DATA_PATH = os.path.join(BASE_PATH, 'data')
-
-SENSOR_FEATURES = [
-    'sensor_11_avg',
-    'sensor_12_avg',
-    'sensor_13_avg',
-    'sensor_14_avg',
-    'sensor_41_avg',
-    'sensor_38_avg',
-    'sensor_39_avg',
-    'sensor_40_avg',
-    'power_30_avg',
-    'sensor_18_avg',
-    'wind_speed_3_avg'
-]
-
-ANOMALY_LOG_FILE = os.path.join(DATA_PATH, 'anomaly_log.json')
-
+from datetime import datetime
 
 class IsolationForestDetector:
-    """
-    Isolation Forest wrapper for WindSense AI.
-    Trains on the current alarm buffer.
-    Flags alarms that don't match any known pattern.
-    Logs anomalies to anomaly_log.json for review.
-    """
+    SENSOR_FEATURES = [
+        'sensor_11_avg',
+        'sensor_12_avg',
+        'sensor_41_avg',
+        'power_30_avg',
+        'wind_speed_3_avg'
+    ]
 
-    def __init__(self, contamination=0.1):
+    def __init__(self, contamination=0.1, random_state=42):
         self.contamination = contamination
+        self.random_state = random_state
         self.model = None
         self.is_trained = False
-        self.features_used = []
-        self.anomaly_log = self._load_anomaly_log()
         self.training_sample_count = 0
+        self.anomaly_log_path = os.path.join(
+            os.path.dirname(os.path.abspath('app.py')), 'data', 'anomaly_log.json'
+        )
 
-    def _load_anomaly_log(self):
-        """Load existing anomaly log or return empty dict"""
-        if os.path.exists(ANOMALY_LOG_FILE):
-            try:
-                with open(ANOMALY_LOG_FILE, 'r') as f:
-                    return json.load(f)
-            except:
-                return {}
-        return {}
-
-    def _save_anomaly_log(self):
-        """Save anomaly log to file"""
-        try:
-            with open(ANOMALY_LOG_FILE, 'w') as f:
-                json.dump(self.anomaly_log, f, indent=2)
-        except Exception as e:
-            print(f"Could not save anomaly log: {e}")
-
-    def _prepare_features(self, alarm_buffer):
-        """Extract available sensor features from alarm buffer"""
-        df = pd.DataFrame(alarm_buffer)
-        available = [f for f in SENSOR_FEATURES if f in df.columns]
-        self.features_used = available
-        if not available:
-            return None
-        X = df[available].fillna(0).values
-        return X
+    def _extract_features(self, alarm_dict):
+        return [float(alarm_dict.get(f, 0) or 0) for f in self.SENSOR_FEATURES]
 
     def train(self, alarm_buffer):
-        """
-        Train the Isolation Forest on current alarm buffer.
-        Returns True if training succeeded, False if not enough data.
-        """
         if len(alarm_buffer) < 10:
-            return False
-        X = self._prepare_features(alarm_buffer)
-        if X is None:
-            return False
-        self.model = IsolationForest(
-            contamination=self.contamination,
-            n_estimators=100,
-            random_state=42
-        )
-        self.model.fit(X)
-        self.is_trained = True
-        self.training_sample_count = len(alarm_buffer)
-        return True
+            return False, f"Need at least 10 alarms to train. Currently have {len(alarm_buffer)}."
+        try:
+            from sklearn.ensemble import IsolationForest
+            X = np.array([self._extract_features(a) for a in alarm_buffer])
+            self.model = IsolationForest(
+                contamination=self.contamination,
+                random_state=self.random_state,
+                n_estimators=100
+            )
+            self.model.fit(X)
+            self.is_trained = True
+            self.training_sample_count = len(alarm_buffer)
+            return True, f"Trained on {len(alarm_buffer)} alarms using {len(self.SENSOR_FEATURES)} sensor features."
+        except Exception as e:
+            return False, f"Training failed: {e}"
 
     def predict(self, alarm_dict):
-        """
-        Predict if a single alarm is anomalous.
-        Returns: (is_anomaly: bool, anomaly_score: float)
-        anomaly_score: higher = more anomalous (0 to 1 scale)
-        """
         if not self.is_trained or self.model is None:
             return False, 0.0
         try:
-            feature_vector = [alarm_dict.get(f, 0) for f in self.features_used]
-            X = np.array(feature_vector).reshape(1, -1)
+            X = np.array([self._extract_features(alarm_dict)])
             prediction = self.model.predict(X)[0]
-            score = self.model.score_samples(X)[0]
-            normalised = max(0.0, min(1.0, (-score - 0.1) / 0.6))
+            score = self.model.decision_function(X)[0]
             is_anomaly = (prediction == -1)
-            return is_anomaly, round(normalised, 3)
-        except Exception:
+            normalized_score = max(0.0, min(1.0, (0.5 - score)))
+            return is_anomaly, round(float(normalized_score), 3)
+        except Exception as e:
             return False, 0.0
 
     def log_anomaly(self, alarm_dict, anomaly_score):
-        """Log a detected anomaly for operator review"""
-        alarm_id = alarm_dict.get('alarm_id', 'unknown')
-        self.anomaly_log[alarm_id] = {
-            'alarm_id': alarm_id,
-            'timestamp': alarm_dict.get('timestamp', ''),
-            'turbine': alarm_dict.get('asset_id', ''),
-            'anomaly_score': anomaly_score,
-            'sensor_snapshot': {f: alarm_dict.get(f, 0) for f in self.features_used},
-            'status': 'pending_review',
-            'operator_label': None
-        }
-        self._save_anomaly_log()
-
-    def label_anomaly(self, alarm_id, operator_label):
-        """Operator provides a label for a flagged anomaly (learning loop)"""
-        if alarm_id in self.anomaly_log:
-            self.anomaly_log[alarm_id]['operator_label'] = operator_label
-            self.anomaly_log[alarm_id]['status'] = 'labelled'
-            self._save_anomaly_log()
+        try:
+            existing = []
+            if os.path.exists(self.anomaly_log_path):
+                try:
+                    with open(self.anomaly_log_path, 'r') as f:
+                        existing = json.load(f)
+                except:
+                    existing = []
+            log_entry = {
+                'logged_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                'alarm_id': alarm_dict.get('alarm_id', 'UNKNOWN'),
+                'asset_id': alarm_dict.get('asset_id', 'UNKNOWN'),
+                'anomaly_score': anomaly_score,
+                'sensor_values': {f: alarm_dict.get(f, 0) for f in self.SENSOR_FEATURES},
+                'predicted_type': alarm_dict.get('predicted_type', 'UNKNOWN'),
+                'status': 'pending_review'
+            }
+            existing.append(log_entry)
+            if len(existing) > 100:
+                existing = existing[-100:]
+            with open(self.anomaly_log_path, 'w') as f:
+                json.dump(existing, f, indent=2)
             return True
-        return False
+        except Exception as e:
+            return False
 
-    def get_pending_reviews(self):
-        """Return all anomalies awaiting operator review"""
-        return {
-            aid: data for aid, data in self.anomaly_log.items()
-            if data.get('status') == 'pending_review'
-        }
+    def load_anomaly_log(self):
+        try:
+            if os.path.exists(self.anomaly_log_path):
+                with open(self.anomaly_log_path, 'r') as f:
+                    return json.load(f)
+            return []
+        except:
+            return []
+
+    def mark_as_known(self, alarm_id):
+        try:
+            log = self.load_anomaly_log()
+            for entry in log:
+                if entry.get('alarm_id') == alarm_id:
+                    entry['status'] = 'known'
+            with open(self.anomaly_log_path, 'w') as f:
+                json.dump(log, f, indent=2)
+            return True
+        except:
+            return False
 
     def get_stats(self):
-        """Return summary statistics"""
-        total = len(self.anomaly_log)
-        pending = len(self.get_pending_reviews())
-        labelled = total - pending
+        log = self.load_anomaly_log()
+        pending = sum(1 for e in log if e.get('status') == 'pending_review')
+        known = sum(1 for e in log if e.get('status') == 'known')
         return {
-            'total_anomalies_detected': total,
-            'pending_review': pending,
-            'labelled': labelled,
+            'is_trained': self.is_trained,
             'training_samples': self.training_sample_count,
-            'features_used': len(self.features_used)
+            'total_anomalies_logged': len(log),
+            'pending_review': pending,
+            'marked_as_known': known
         }

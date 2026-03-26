@@ -4,11 +4,10 @@ Simulates industrial OPC UA data feed from wind turbine SCADA system.
 In a production deployment this would connect to a real OPC UA server.
 For the TECHgium finale demo this generates realistic live data streams.
 """
-
+import random
 import numpy as np
 import pandas as pd
 from datetime import datetime, timedelta
-import random
 import time
 
 
@@ -223,6 +222,21 @@ class OPCUASimulator:
                 "status": "ALARM" if turbine_id in self.active_alarms else "NORMAL",
                 "alarm_type": self.active_alarms.get(turbine_id, None)
             })
+
+        # ── ADDED: Attach default anomaly fields to every reading ──
+        for r in readings:
+            if 'anomaly_score' not in r:
+                r['anomaly_score'] = round(random.uniform(0.0, 0.15), 3)
+            if 'is_anomaly' not in r:
+                r['is_anomaly'] = False
+
+        # ── ADDED: Inject a simulated anomaly occasionally for demo purposes ──
+        if readings and random.randint(1, 8) == 1:
+            anomaly_idx = random.randint(0, len(readings) - 1)
+            readings[anomaly_idx]['anomaly_score'] = round(random.uniform(0.65, 0.95), 3)
+            readings[anomaly_idx]['is_anomaly'] = True
+            readings[anomaly_idx]['alarm_active'] = True
+            readings[anomaly_idx]['status'] = 'ANOMALY DETECTED'
 
         return readings
 
