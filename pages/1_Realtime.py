@@ -487,16 +487,9 @@ def send_sms_notification(phone_number, recipient_name, alarm_type, turbine_id, 
 
 
 def process_critical_alarm(alarm_type, turbine_id, alarm_id, severity='CRITICAL'):
-    """
-    Process a critical alarm and notify ONLY the correct primary contact
-    for that alarm type. No broadcast. No duplicates.
-    Secondary contact gets email only (no SMS). Management escalation
-    is handled separately by check_and_escalate().
-    """
     if 'active_critical_alarms' not in st.session_state:
         st.session_state.active_critical_alarms = {}
 
-    # Prevent duplicate processing if alarm already active
     if alarm_id in st.session_state.active_critical_alarms:
         return alarm_id
 
@@ -510,7 +503,6 @@ def process_critical_alarm(alarm_type, turbine_id, alarm_id, severity='CRITICAL'
 
     stakeholder_info = STAKEHOLDERS.get(alarm_type, STAKEHOLDERS.get('DEFAULT', {}))
 
-    # ── Primary contact: Email + WhatsApp ──────────────────────────
     primary = stakeholder_info.get('primary', {})
     if primary:
         send_email_notification(
@@ -533,7 +525,6 @@ def process_critical_alarm(alarm_type, turbine_id, alarm_id, severity='CRITICAL'
             f"Primary: {primary['name']}"
         )
 
-    # ── Secondary contact: Email only (no SMS) ─────────────────────
     secondary = stakeholder_info.get('secondary', {})
     if secondary:
         send_email_notification(
@@ -590,8 +581,6 @@ def load_historical_data():
 
 @st.cache_resource
 def load_ml_model():
-    """Load trained ML model"""
-
     try:
         with open(MODEL_PATH + 'windsense_rf_model.pkl', 'rb') as f:
             model = pickle.load(f)
@@ -602,7 +591,6 @@ def load_ml_model():
         return model, features, metadata
     except Exception as e:
         st.warning(f"Model not found. Using demo mode. Error: {e}")
-
         return None, None, None
 
 @st.cache_data
@@ -773,7 +761,6 @@ if 'iso_detector' not in st.session_state:
 st.session_state.anomaly_detector = st.session_state.iso_detector
 
 def predict_alarm_type(alarm_data, model, features):
-    """Predict alarm type — handles both old sensor features and new duration features"""
     if model is None:
         status = alarm_data.get('status_type_id', 5.0)
         if status == 5.0:
@@ -801,7 +788,6 @@ def predict_alarm_type(alarm_data, model, features):
             return 'Hydraulic Oil Contamination', 83.7
 
 def send_notification(alarm):
-    """Send notification to appropriate stakeholders"""
     dept_mapping = {
         'Main Controller Fault': 'Software & Controls',
         'Grid Frequency Deviation': 'Grid Operations',
@@ -811,7 +797,6 @@ def send_notification(alarm):
         'Converter Circuit Fault': 'Electrical - Power Electronics',
         'Pitch System Fault': 'Mechanical - Blade Systems',
         'Yaw System Fault': 'Mechanical - Nacelle Systems'
-
     }
     department = dept_mapping.get(alarm['predicted_type'], 'General Maintenance')
     stakeholder_info = STAKEHOLDERS.get(alarm['predicted_type'], STAKEHOLDERS.get('DEFAULT', {}))
@@ -849,6 +834,7 @@ def train_isolation_forest():
     st.session_state.isolation_forest_trained = True
     st.session_state.isolation_forest_features = available
     return True
+
 # ═══════════════════════════════════════════════════════════════════
 # SIDEBAR
 # ═══════════════════════════════════════════════════════════════════
@@ -879,10 +865,12 @@ with st.sidebar:
     if st.button("🔄 Generate New Alarm", use_container_width=True):
         new_alarm = st.session_state.simulator.generate_alarm()
         if st.session_state.iso_detector.is_trained:
-            result = st.session_state.iso_detector.predict(new_alarm)
-            new_alarm['is_anomaly'] = result.get('is_anomaly', False)
+            is_anomaly, anomaly_score = st.session_state.iso_detector.predict(new_alarm)
+            new_alarm['is_anomaly'] = is_anomaly
+            new_alarm['anomaly_score'] = anomaly_score
         else:
             new_alarm['is_anomaly'] = False
+            new_alarm['anomaly_score'] = 0.0
         st.session_state.alarm_buffer.insert(0, new_alarm)
         send_notification(new_alarm)
         st.rerun()
@@ -909,11 +897,11 @@ with st.sidebar:
 
     if st.button("🧠 Train Anomaly Detector", use_container_width=True):
         if len(st.session_state.alarm_buffer) >= 10:
-            result = st.session_state.iso_detector.train(st.session_state.alarm_buffer)
-            if result:
-                st.success("✅ Anomaly detector trained!")
+            success, message = st.session_state.iso_detector.train(st.session_state.alarm_buffer)
+            if success:
+                st.success(f"✅ {message}")
             else:
-                st.warning("⚠️ Need at least 10 alarms first")
+                st.warning(f"⚠️ {message}")
         else:
             st.warning(f"Need {10 - len(st.session_state.alarm_buffer)} more alarms")
 
@@ -921,7 +909,6 @@ with st.sidebar:
         st.caption("🟢 Anomaly detector: ACTIVE")
     else:
         st.caption("🔴 Anomaly detector: not trained yet")
-
 
     st.divider()
 
@@ -967,7 +954,7 @@ with tab1:
 
     st.divider()
 
-# ===== TEMP CRITICAL ALARM SIMULATOR =====
+    # ===== TEMP CRITICAL ALARM SIMULATOR =====
     if st.checkbox("🧪 Enable Critical Alarm Simulator (Test Notifications)"):
         import random as _random
 
@@ -1002,11 +989,11 @@ with tab1:
             send_notification(alarm)
 
         _col1, _col2, _col3 = st.columns(3)
-        if _col1.button("🔧 Yaw System Hydraulic Fault",        key="test_yaw"):
+        if _col1.button("🔧 Yaw System Hydraulic Fault", key="test_yaw"):
             _fire_test_alarm("Yaw System Hydraulic Fault")
             st.success("✅ Test alarm fired — check Tab 4 & Tab 7 for status")
             st.rerun()
-        if _col2.button("🌡️ Generator Bearing Overheating",     key="test_gen"):
+        if _col2.button("🌡️ Generator Bearing Overheating", key="test_gen"):
             _fire_test_alarm("Generator Bearing Overheating")
             st.success("✅ Test alarm fired — check Tab 4 & Tab 7 for status")
             st.rerun()
@@ -1018,7 +1005,7 @@ with tab1:
         st.caption(
             "Uses the live pipeline: Email ✉️ + WhatsApp 📲 → Acknowledge link updates Tab 7 automatically."
         )
-# ===== END TEMP SIMULATOR =====
+    # ===== END TEMP SIMULATOR =====
 
     st.divider()
     st.subheader("🔴 LIVE ALARM STREAM")
@@ -1071,13 +1058,11 @@ with tab1:
 
             anomaly_tag = ""
             if st.session_state.iso_detector.is_trained:
-    		is_anomaly, anomaly_score = st.session_state.iso_detector.predict(dict(row))
-    		row['is_anomaly'] = is_anomaly
-    		row['anomaly_score'] = anomaly_score
-                if result['is_anomaly']:
+                is_anomaly, anomaly_score = st.session_state.iso_detector.predict(dict(row))
+                if is_anomaly:
                     anomaly_tag = "ANOMALY"
                     anomaly_count += 1
-                    save_anomaly_to_log(row.get('alarm_id', 'N/A'), dict(row), result)
+                    save_anomaly_to_log(row.get('alarm_id', 'N/A'), dict(row), {'is_anomaly': is_anomaly, 'anomaly_score': anomaly_score})
                 else:
                     anomaly_tag = "Known"
             else:
@@ -1928,53 +1913,41 @@ with tab7:
     st.caption("Alarms flagged as anomalous by Isolation Forest, awaiting operator review")
 
     if hasattr(st.session_state, 'iso_detector') and st.session_state.iso_detector.is_trained:
-        pending = st.session_state.iso_detector.get_pending_reviews()
         stats = st.session_state.iso_detector.get_stats()
 
         col1, col2, col3 = st.columns(3)
         with col1:
-            st.metric("Total Anomalies", stats['total_anomalies_detected'])
+            st.metric("Total Anomalies Logged", stats['total_anomalies_logged'])
         with col2:
             st.metric("Pending Review", stats['pending_review'])
         with col3:
-            st.metric("Labelled", stats['labelled'])
+            st.metric("Marked as Known", stats['marked_as_known'])
+
+        anomaly_log = st.session_state.iso_detector.load_anomaly_log()
+        pending = [e for e in anomaly_log if e.get('status') == 'pending_review']
 
         if pending:
             st.warning(f"⚠️ {len(pending)} anomalies need your review")
-            for alarm_id, data in list(pending.items())[:5]:
+            for entry in pending[:5]:
                 with st.expander(
-                    f"⚠️ {alarm_id} | Turbine T-{data['turbine']} | "
-                    f"Score: {data['anomaly_score']:.2f} | {data['timestamp']}"
+                    f"⚠️ {entry['alarm_id']} | Asset: {entry['asset_id']} | "
+                    f"Score: {entry['anomaly_score']} | {entry['logged_at']}"
                 ):
                     st.write("**Sensor Snapshot:**")
-                    for sensor, val in data['sensor_snapshot'].items():
-                        st.write(f"  {sensor}: {val:.2f}")
+                    for sensor, val in entry.get('sensor_values', {}).items():
+                        st.write(f"  {sensor}: {val}")
+                    st.write(f"**Predicted Type:** {entry.get('predicted_type', 'N/A')}")
 
-                    st.write("**Assign a label to this anomaly:**")
-                    label_options = [
-                        "Select label...",
-                        "Grid Frequency Deviation",
-                        "Grid Voltage Fluctuation",
-                        "Momentary Grid Loss",
-                        "Extended Grid Outage",
-                        "Main Controller Fault",
-                        "Emergency Brake Activation",
-                        "New Unknown Alarm Type",
-                        "False Positive — Ignore"
-                    ]
-                    selected_label = st.selectbox(
-                        "Label",
-                        label_options,
-                        key=f"label_{alarm_id}"
-                    )
-
-                    if st.button("✅ Submit Label", key=f"submit_{alarm_id}"):
-                        if selected_label != "Select label...":
-                            st.session_state.iso_detector.label_anomaly(alarm_id, selected_label)
-                            st.success(f"Labelled as: {selected_label}")
+                    col_yes, col_no = st.columns(2)
+                    with col_yes:
+                        if st.button("✅ Mark as Known", key=f"known_{entry['alarm_id']}"):
+                            st.session_state.iso_detector.mark_as_known(entry['alarm_id'])
+                            st.success("Marked as known!")
                             st.rerun()
-                        else:
-                            st.warning("Please select a label first")
+                    with col_no:
+                        if st.button("❌ Dismiss", key=f"dismiss_{entry['alarm_id']}"):
+                            st.session_state.iso_detector.mark_as_known(entry['alarm_id'])
+                            st.rerun()
         else:
             st.success("✅ No anomalies pending review")
     else:
@@ -1990,7 +1963,6 @@ with tab8:
 
     st.session_state.opcua_sim = OPCUASimulator()
 
-    # Inject real alarms into OPC UA simulator
     for alarm in st.session_state.alarm_buffer[:5]:
         turbine_id = alarm['asset_id']
         if turbine_id in st.session_state.opcua_sim.turbine_ids:
@@ -2022,11 +1994,11 @@ with tab8:
     display_readings.columns = ['Node ID', 'Description', 'Value', 'Unit', 'Status', 'Timestamp']
     st.table(display_readings)
 
-    # Highlight alarming nodes
-    alarming_nodes = [r for r in readings if r.get('alarm_active', False)]
+    alarming_nodes = [r for r in readings if r.get('alarm_active', False) or r.get('is_anomaly', False)]
     if alarming_nodes:
-        st.markdown("**🚨 Active Alarm Nodes:**")
+        st.markdown("**🚨 Active Alarm / Anomaly Nodes:**")
         for node in alarming_nodes:
+            anomaly_label = " | ⚠️ ANOMALY" if node.get('is_anomaly', False) else ""
             st.markdown(f"""
             <div style="background: linear-gradient(135deg, #8B0000, #cc0000);
                         color: white; padding: 0.6rem 1rem; border-radius: 6px;
@@ -2034,7 +2006,7 @@ with tab8:
                 <strong>{node.get('node_id', 'Unknown')}</strong> —
                 {node.get('description', '')} |
                 Value: {node.get('value', 'N/A')} {node.get('unit', '')} |
-                Status: {node.get('status', 'N/A')}
+                Status: {node.get('status', 'N/A')}{anomaly_label}
             </div>
             """, unsafe_allow_html=True)
     else:
