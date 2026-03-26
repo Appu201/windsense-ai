@@ -1100,7 +1100,7 @@ with tab1:
             st.subheader("🔍 Anomaly Review Queue")
             st.info(f"{len(unreviewed)} anomalous alarm(s) detected. Review and decide whether to add to known patterns.")
 
-            for anomaly in unreviewed[:5]:
+            for i, anomaly in enumerate(unreviewed[:5]):
                 with st.expander(
                     f"🚨 {anomaly['alarm_id']} | Turbine T-{anomaly['turbine']} | Score: {anomaly['anomaly_score']}",
                     expanded=False
@@ -1110,12 +1110,12 @@ with tab1:
                     st.write(f"**Reason:** {anomaly['reason']}")
                     col_yes, col_no = st.columns(2)
                     with col_yes:
-                        if st.button(f"✅ Add to Known", key=f"t1_add_{anomaly['alarm_id']}"):
+                        if st.button(f"✅ Add to Known", key=f"t1_add_{i}_{anomaly['alarm_id']}"):
                             mark_anomaly_reviewed(anomaly['alarm_id'], add_to_known=True)
                             st.success("Added to known patterns!")
                             st.rerun()
                     with col_no:
-                        if st.button(f"❌ Dismiss", key=f"t1_dismiss_{anomaly['alarm_id']}"):
+                        if st.button(f"❌ Dismiss", key=f"t1_dismiss_{i}_{anomaly['alarm_id']}"):
                             mark_anomaly_reviewed(anomaly['alarm_id'], add_to_known=False)
                             st.rerun()
 
@@ -1928,7 +1928,7 @@ with tab7:
 
         if pending:
             st.warning(f"⚠️ {len(pending)} anomalies need your review")
-            for entry in pending[:5]:
+            for i, entry in enumerate(pending[:5]):
                 with st.expander(
                     f"⚠️ {entry['alarm_id']} | Asset: {entry['asset_id']} | "
                     f"Score: {entry['anomaly_score']} | {entry['logged_at']}"
@@ -1940,12 +1940,12 @@ with tab7:
 
                     col_yes, col_no = st.columns(2)
                     with col_yes:
-                        if st.button("✅ Mark as Known", key=f"t7_known_{entry['alarm_id']}"):
+                        if st.button("✅ Mark as Known", key=f"t7_known_{i}_{entry['alarm_id']}"):
                             st.session_state.iso_detector.mark_as_known(entry['alarm_id'])
                             st.success("Marked as known!")
                             st.rerun()
                     with col_no:
-                        if st.button("❌ Dismiss", key=f"t7_dismiss_{entry['alarm_id']}"):
+                        if st.button("❌ Dismiss", key=f"t7_dismiss_{i}_{entry['alarm_id']}"):
                             st.session_state.iso_detector.mark_as_known(entry['alarm_id'])
                             st.rerun()
         else:
