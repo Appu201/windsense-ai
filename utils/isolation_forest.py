@@ -108,6 +108,52 @@ class IsolationForestDetector:
         except:
             return False
 
+    def add_to_alarm_database(self, alarm_id, new_alarm_type, department='Anomaly Detection', team='AI Monitoring System'):
+        """
+        When a new anomaly type is marked as known, add it to the alarm database CSV.
+        Returns (success: bool, message: str)
+        """
+        import pandas as pd
+        try:
+            db_path = os.path.join(
+                os.path.dirname(os.path.abspath('app.py')), 'data', 'top_50_unique_detailed_alarms.csv'
+            )
+            if not os.path.exists(db_path):
+                return False, "Alarm database CSV not found."
+
+            df = pd.read_csv(db_path)
+
+            # Check if already exists
+            existing_types = df['Alarm_Type'].tolist() if 'Alarm_Type' in df.columns else []
+            if new_alarm_type in existing_types:
+                return False, f"'{new_alarm_type}' already exists in alarm database."
+
+            # Build new row — all columns default to None then fill what we know
+            new_rank = int(df['Rank'].max()) + 1 if 'Rank' in df.columns else 99
+            new_row = {col: None for col in df.columns}
+            new_row['Rank'] = new_rank
+            new_row['Alarm_Type'] = new_alarm_type
+            new_row['Frequency'] = 1
+            new_row['Avg_Duration'] = 0.0
+            new_row['Total_Downtime'] = 0.0
+            new_row['Turbines_Affected'] = 1
+            new_row['Department'] = department
+            new_row['Team'] = team
+            new_row['Criticality_Score'] = 0.0
+            new_row['Notification_Priority'] = '🟡 Medium - Within 8 hours'
+            new_row['Response_Time'] = '8 hours'
+            new_row['Root_Cause_Category'] = 'Unknown — requires investigation'
+
+            df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
+            df.to_csv(db_path, index=False)
+
+            # Also mark this anomaly as known in the log
+            self.mark_as_known(alarm_id)
+
+            return True, f"'{new_alarm_type}' added to alarm database at Rank {new_rank}."
+        except Exception as e:
+            return False, f"DB update failed: {e}"
+
     def get_stats(self):
         log = self.load_anomaly_log()
         pending = sum(1 for e in log if e.get('status') == 'pending_review')

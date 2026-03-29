@@ -230,9 +230,19 @@ class OPCUASimulator:
             if 'is_anomaly' not in r:
                 r['is_anomaly'] = False
 
-        # ── ADDED: Inject a simulated anomaly occasionally for demo purposes ──
+        # ── UPDATED: Inject a simulated anomaly occasionally for demo purposes ──
+        # Prefer temperature/pressure/bearing nodes for anomaly injection
         if readings and random.randint(1, 8) == 1:
-            anomaly_idx = random.randint(0, len(readings) - 1)
+            temp_pressure_indices = [
+                i for i, r in enumerate(readings)
+                if any(kw in str(r.get('node_id', '')).lower()
+                       for kw in ['temp', 'pressure', 'bearing', 'hydraulic', 'generator'])
+            ]
+            anomaly_idx = (
+                random.choice(temp_pressure_indices)
+                if temp_pressure_indices
+                else random.randint(0, len(readings) - 1)
+            )
             readings[anomaly_idx]['anomaly_score'] = round(random.uniform(0.65, 0.95), 3)
             readings[anomaly_idx]['is_anomaly'] = True
             readings[anomaly_idx]['alarm_active'] = True
