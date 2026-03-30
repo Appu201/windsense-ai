@@ -1,252 +1,550 @@
-# utils/theme.py — WindSense AI Dark Theme
+# utils/theme.py — WindSense AI Dark Theme (Refined)
 import streamlit as st
 
 DARK_CSS = """
 <style>
+
+/* ── Google Font Import ── */
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Rajdhani:wght@400;600;700&display=swap');
+
+/* ── CSS Variables ── */
+:root {
+    --bg-primary:    #0D1B2A;
+    --bg-secondary:  #112233;
+    --bg-deep:       #091520;
+    --accent-teal:   #00C9B1;
+    --accent-blue:   #4FC3F7;
+    --accent-soft:   #89CFFE;
+    --border-dim:    #1E3A5F;
+    --border-bright: #00C9B1;
+    --text-primary:  #E0E0E0;
+    --text-secondary:#D0D8E0;
+    --text-muted:    #8899AA;
+    --text-faint:    #5E7A8A;
+    --red:           #FF4444;
+    --orange:        #FFB347;
+    --yellow:        #FFD700;
+}
 
 /* ── Base ── */
 .stApp,
 .main,
 [data-testid="stAppViewContainer"],
 [data-testid="stHeader"] {
-    background-color: #0D1B2A !important;
-    color: #E0E0E0 !important;
+    background-color: var(--bg-primary) !important;
+    color: var(--text-primary) !important;
+    font-family: 'Rajdhani', sans-serif !important;
 }
 
 .main .block-container {
-    background-color: #0D1B2A !important;
+    background-color: var(--bg-primary) !important;
     padding: 1.5rem 2rem;
+    max-width: 1400px;
+}
+
+/* ── Subtle grid texture on background ── */
+[data-testid="stAppViewContainer"]::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+        linear-gradient(rgba(0, 201, 177, 0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 201, 177, 0.025) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
 }
 
 /* ── Sidebar ── */
 [data-testid="stSidebar"] {
-    background: linear-gradient(180deg, #0D1B2A 0%, #1a2a3a 100%) !important;
-    border-right: 1px solid #00C9B1 !important;
+    background: linear-gradient(180deg, #0a1520 0%, #0d1e30 60%, #091825 100%) !important;
+    border-right: 1px solid var(--accent-teal) !important;
+    box-shadow: 4px 0 20px rgba(0, 201, 177, 0.08);
 }
 
 [data-testid="stSidebar"] * {
-    color: #D0D8E0 !important;
+    color: var(--text-secondary) !important;
+    font-family: 'Rajdhani', sans-serif !important;
 }
 
 [data-testid="stSidebarNav"] {
     display: none;
 }
 
+/* Sidebar accent line at top */
+[data-testid="stSidebar"]::before {
+    content: '';
+    display: block;
+    height: 3px;
+    background: linear-gradient(90deg, var(--accent-teal), var(--accent-blue), transparent);
+    margin-bottom: 0.5rem;
+}
+
 /* ── Tabs ── */
 .stTabs [data-baseweb="tab-list"] {
-    background-color: #091520 !important;
-    border-bottom: 2px solid #00C9B1 !important;
-    gap: 0.25rem;
+    background-color: var(--bg-deep) !important;
+    border-bottom: 2px solid var(--accent-teal) !important;
+    gap: 0.15rem;
     padding: 0 0.5rem;
 }
 
 .stTabs [data-baseweb="tab"] {
     background-color: transparent !important;
-    color: #607080 !important;
+    color: var(--text-muted) !important;
     border: none !important;
-    font-weight: 600;
+    font-family: 'Rajdhani', sans-serif !important;
+    font-weight: 600 !important;
     font-size: 0.82rem;
-    padding: 0.6rem 0.8rem;
+    letter-spacing: 0.03em;
+    padding: 0.6rem 0.85rem;
     border-radius: 4px 4px 0 0;
-    transition: color 0.2s;
+    transition: color 0.2s, background-color 0.2s;
+}
+
+.stTabs [data-baseweb="tab"]:hover {
+    color: var(--accent-teal) !important;
+    background-color: rgba(0, 201, 177, 0.06) !important;
 }
 
 .stTabs [aria-selected="true"] {
-    background-color: #00C9B1 !important;
-    color: #0D1B2A !important;
-    border-bottom: 3px solid #00C9B1 !important;
+    background-color: var(--accent-teal) !important;
+    color: var(--bg-primary) !important;
+    border-bottom: 3px solid var(--accent-teal) !important;
+    font-weight: 700 !important;
 }
 
 .stTabs [data-baseweb="tab-panel"] {
-    background-color: #0D1B2A !important;
+    background-color: var(--bg-primary) !important;
     padding: 1rem 0;
 }
 
 /* ── Metrics ── */
 [data-testid="stMetric"] {
-    background-color: #112233;
-    border: 1px solid #1E3A5F;
+    background: linear-gradient(135deg, #0f2035 0%, #112233 100%);
+    border: 1px solid var(--border-dim);
+    border-top: 2px solid var(--accent-teal);
     border-radius: 8px;
     padding: 0.75rem 1rem;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+[data-testid="stMetric"]:hover {
+    border-color: var(--accent-teal);
+    box-shadow: 0 0 12px rgba(0, 201, 177, 0.12);
 }
 
 [data-testid="stMetricValue"] {
-    color: #00C9B1 !important;
+    color: var(--accent-teal) !important;
+    font-family: 'JetBrains Mono', monospace !important;
     font-size: 1.5rem !important;
-    font-weight: 700 !important;
+    font-weight: 600 !important;
 }
 
 [data-testid="stMetricLabel"] {
-    color: #8899AA !important;
+    color: var(--text-muted) !important;
     font-size: 0.82rem !important;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
 }
 
 [data-testid="stMetricDelta"] {
     font-size: 0.75rem !important;
+    font-family: 'JetBrains Mono', monospace !important;
 }
 
 /* ── DataFrames ── */
 [data-testid="stDataFrame"] > div {
-    background-color: #112233 !important;
-    border: 1px solid #00C9B1 !important;
+    background-color: var(--bg-secondary) !important;
+    border: 1px solid var(--accent-teal) !important;
+    border-radius: 6px !important;
+    overflow: hidden;
 }
 
 .dvn-scroller {
-    background-color: #112233 !important;
+    background-color: var(--bg-secondary) !important;
 }
 
-/* ── DataFrame text fix ── */
-[data-testid="stDataFrame"] canvas {
-    color: #D0D8E0 !important;
-}
 .glideDataEditor {
-    background-color: #112233 !important;
-    color: #D0D8E0 !important;
+    background-color: var(--bg-secondary) !important;
+    color: var(--text-secondary) !important;
 }
+
 .dvn-scroller * {
-    color: #D0D8E0 !important;
+    color: var(--text-secondary) !important;
 }
+
 [data-testid="stDataFrame"] * {
-    color: #D0D8E0 !important;
-    background-color: #112233 !important;
+    color: var(--text-secondary) !important;
+    background-color: var(--bg-secondary) !important;
 }
 
 /* ── Buttons ── */
 .stButton > button {
     background: linear-gradient(135deg, #007A6E 0%, #005580 100%) !important;
     color: #FFFFFF !important;
-    border: 1px solid #00C9B1 !important;
-    border-radius: 8px !important;
+    border: 1px solid var(--accent-teal) !important;
+    border-radius: 6px !important;
+    font-family: 'Rajdhani', sans-serif !important;
     font-weight: 600 !important;
+    font-size: 0.88rem !important;
+    letter-spacing: 0.04em !important;
+    padding: 0.4rem 1rem !important;
     transition: all 0.2s !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
 }
 
 .stButton > button[kind="primary"] {
-    background: linear-gradient(135deg, #00C9B1 0%, #0077B6 100%) !important;
+    background: linear-gradient(135deg, var(--accent-teal) 0%, #0077B6 100%) !important;
+    color: var(--bg-primary) !important;
 }
 
 .stButton > button:hover {
     opacity: 0.88 !important;
-    border-color: #4FC3F7 !important;
+    border-color: var(--accent-blue) !important;
+    box-shadow: 0 0 10px rgba(0, 201, 177, 0.25) !important;
+    transform: translateY(-1px) !important;
+}
+
+.stButton > button:active {
+    transform: translateY(0px) !important;
 }
 
 /* ── Text inputs / selects ── */
 .stTextInput input,
 .stTextArea textarea,
 .stNumberInput input {
-    background-color: #112233 !important;
-    color: #E0E0E0 !important;
-    border: 1px solid #1E3A5F !important;
+    background-color: var(--bg-secondary) !important;
+    color: var(--text-primary) !important;
+    border: 1px solid var(--border-dim) !important;
     border-radius: 6px !important;
+    font-family: 'JetBrains Mono', monospace !important;
+    font-size: 0.88rem !important;
 }
 
 .stTextInput input:focus,
-.stTextArea textarea:focus {
-    border-color: #00C9B1 !important;
-    box-shadow: 0 0 0 1px #00C9B1 !important;
+.stTextArea textarea:focus,
+.stNumberInput input:focus {
+    border-color: var(--accent-teal) !important;
+    box-shadow: 0 0 0 1px var(--accent-teal) !important;
+    outline: none !important;
 }
 
-.stSelectbox > div > div {
-    background-color: #112233 !important;
-    color: #E0E0E0 !important;
-    border: 1px solid #1E3A5F !important;
+.stTextInput label,
+.stTextArea label,
+.stNumberInput label,
+.stSelectbox label,
+.stMultiSelect label,
+.stSlider label,
+.stDateInput label {
+    color: var(--text-muted) !important;
+    font-size: 0.8rem !important;
+    font-weight: 600 !important;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.stSelectbox > div > div,
+.stMultiSelect > div > div {
+    background-color: var(--bg-secondary) !important;
+    color: var(--text-primary) !important;
+    border: 1px solid var(--border-dim) !important;
+    border-radius: 6px !important;
+}
+
+/* Dropdown options */
+[data-baseweb="popover"] *,
+[data-baseweb="menu"] * {
+    background-color: var(--bg-secondary) !important;
+    color: var(--text-primary) !important;
+}
+
+[data-baseweb="option"]:hover {
+    background-color: rgba(0, 201, 177, 0.12) !important;
+    color: var(--accent-teal) !important;
+}
+
+/* ── Sliders ── */
+[data-testid="stSlider"] > div > div > div > div {
+    background: var(--accent-teal) !important;
+}
+
+[data-testid="stSlider"] [role="slider"] {
+    background: var(--accent-teal) !important;
+    border: 2px solid var(--bg-primary) !important;
+    box-shadow: 0 0 6px rgba(0, 201, 177, 0.4) !important;
+}
+
+/* ── Checkboxes & Radio ── */
+[data-testid="stCheckbox"] label,
+[data-testid="stRadio"] label {
+    color: var(--text-secondary) !important;
+}
+
+[data-baseweb="checkbox"] span,
+[data-baseweb="radio"] span {
+    border-color: var(--border-dim) !important;
+    background-color: var(--bg-secondary) !important;
 }
 
 /* ── Expanders ── */
 .streamlit-expanderHeader {
-    background-color: #112233 !important;
-    color: #00C9B1 !important;
-    border: 1px solid #1E3A5F !important;
+    background-color: var(--bg-secondary) !important;
+    color: var(--accent-teal) !important;
+    border: 1px solid var(--border-dim) !important;
     border-radius: 6px !important;
+    font-family: 'Rajdhani', sans-serif !important;
+    font-weight: 600 !important;
+    letter-spacing: 0.03em;
+}
+
+.streamlit-expanderHeader:hover {
+    border-color: var(--accent-teal) !important;
+    background-color: rgba(0, 201, 177, 0.05) !important;
 }
 
 .streamlit-expanderContent {
-    background-color: #091520 !important;
-    border: 1px solid #1E3A5F !important;
+    background-color: var(--bg-deep) !important;
+    border: 1px solid var(--border-dim) !important;
     border-top: none !important;
+    border-radius: 0 0 6px 6px !important;
 }
 
 /* ── Alert boxes ── */
 [data-testid="stAlert"] {
-    background-color: #112233 !important;
+    background-color: var(--bg-secondary) !important;
     border-radius: 8px !important;
+}
+
+[data-testid="stAlert"][data-type="success"] {
+    border-left: 4px solid #00C9B1 !important;
+}
+
+[data-testid="stAlert"][data-type="error"] {
+    border-left: 4px solid var(--red) !important;
+}
+
+[data-testid="stAlert"][data-type="warning"] {
+    border-left: 4px solid var(--orange) !important;
+}
+
+[data-testid="stAlert"][data-type="info"] {
+    border-left: 4px solid var(--accent-blue) !important;
+}
+
+/* ── Progress bars ── */
+[data-testid="stProgressBar"] > div > div {
+    background: linear-gradient(90deg, var(--accent-teal), var(--accent-blue)) !important;
+    border-radius: 4px;
+}
+
+[data-testid="stProgressBar"] > div {
+    background-color: var(--bg-secondary) !important;
+    border-radius: 4px;
 }
 
 /* ── Dividers ── */
 hr {
-    border-color: #1E3A5F !important;
+    border: none !important;
+    border-top: 1px solid var(--border-dim) !important;
+    margin: 1.2rem 0 !important;
 }
 
 /* ── Typography ── */
-h1 { color: #00C9B1 !important; font-weight: 700 !important; }
-h2 { color: #00C9B1 !important; font-weight: 600 !important; }
-h3 { color: #4FC3F7 !important; font-weight: 600 !important; }
-h4, h5, h6 { color: #89CFFE !important; }
-p, li, label { color: #D0D8E0 !important; }
-strong { color: #E8F4F8 !important; }
+h1 {
+    color: var(--accent-teal) !important;
+    font-family: 'Rajdhani', sans-serif !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.04em;
+}
+h2 {
+    color: var(--accent-teal) !important;
+    font-family: 'Rajdhani', sans-serif !important;
+    font-weight: 600 !important;
+    letter-spacing: 0.03em;
+}
+h3 {
+    color: var(--accent-blue) !important;
+    font-family: 'Rajdhani', sans-serif !important;
+    font-weight: 600 !important;
+}
+h4, h5, h6 {
+    color: var(--accent-soft) !important;
+    font-family: 'Rajdhani', sans-serif !important;
+}
+p, li {
+    color: var(--text-secondary) !important;
+    line-height: 1.65;
+}
+label {
+    color: var(--text-secondary) !important;
+}
+strong {
+    color: #E8F4F8 !important;
+}
+code {
+    background-color: var(--bg-deep) !important;
+    color: var(--accent-teal) !important;
+    border: 1px solid var(--border-dim) !important;
+    border-radius: 4px;
+    font-family: 'JetBrains Mono', monospace !important;
+    font-size: 0.85em;
+    padding: 0.1em 0.35em;
+}
 
 /* ── Caption ── */
 [data-testid="stCaption"],
 .stCaption {
-    color: #5E7A8A !important;
+    color: var(--text-faint) !important;
+    font-size: 0.78rem !important;
+}
+
+/* ── Spinner ── */
+[data-testid="stSpinner"] {
+    color: var(--accent-teal) !important;
+}
+
+/* ── Toast / notification ── */
+[data-testid="stToast"] {
+    background-color: var(--bg-secondary) !important;
+    border: 1px solid var(--accent-teal) !important;
+    color: var(--text-primary) !important;
+    border-radius: 8px !important;
 }
 
 /* ── Scrollbar ── */
-::-webkit-scrollbar { width: 5px; background: #091520; }
-::-webkit-scrollbar-thumb { background: #00C9B1; border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: #4FC3F7; }
+::-webkit-scrollbar { width: 5px; height: 5px; background: var(--bg-deep); }
+::-webkit-scrollbar-thumb { background: var(--accent-teal); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--accent-blue); }
+::-webkit-scrollbar-track { background: var(--bg-deep); }
 
 /* ── Markdown tables ── */
 table {
-    background-color: #112233 !important;
+    background-color: var(--bg-secondary) !important;
     border-collapse: collapse;
     width: 100%;
+    border-radius: 6px;
+    overflow: hidden;
 }
 th {
-    background-color: #1E3A5F !important;
-    color: #00C9B1 !important;
-    padding: 8px 12px;
+    background-color: var(--border-dim) !important;
+    color: var(--accent-teal) !important;
+    font-family: 'Rajdhani', sans-serif !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    font-size: 0.82rem;
+    padding: 9px 14px;
     text-align: left;
-    border: 1px solid #1E3A5F;
+    border: 1px solid #162840;
 }
 td {
-    background-color: #112233 !important;
-    color: #D0D8E0 !important;
-    padding: 6px 12px;
-    border: 1px solid #1A2A3A;
+    background-color: var(--bg-secondary) !important;
+    color: var(--text-secondary) !important;
+    padding: 7px 14px;
+    border: 1px solid #162840;
+    font-size: 0.9rem;
+}
+tr:hover td {
+    background-color: rgba(0, 201, 177, 0.04) !important;
 }
 
 /* ── Download button ── */
 [data-testid="stDownloadButton"] button {
-    background: linear-gradient(135deg, #1E3A5F 0%, #112233 100%) !important;
-    color: #00C9B1 !important;
-    border: 1px solid #00C9B1 !important;
+    background: linear-gradient(135deg, var(--border-dim) 0%, var(--bg-secondary) 100%) !important;
+    color: var(--accent-teal) !important;
+    border: 1px solid var(--accent-teal) !important;
+    border-radius: 6px !important;
+    font-family: 'Rajdhani', sans-serif !important;
+    font-weight: 600 !important;
 }
 
-/* ── Alert cards ── */
+/* ── Plotly chart containers ── */
+[data-testid="stPlotlyChart"] {
+    background-color: transparent !important;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.js-plotly-plot .plotly .bg {
+    fill: var(--bg-secondary) !important;
+}
+
+/* ── Alert severity cards ── */
 .alert-critical {
-    background: linear-gradient(135deg, #1a0a0a 0%, #2d0f0f 100%) !important;
-    border-left: 4px solid #FF4444 !important;
+    background: linear-gradient(135deg, #1a0808 0%, #2a0f0f 100%) !important;
+    border-left: 4px solid var(--red) !important;
     padding: 10px 14px;
     border-radius: 0 6px 6px 0;
     margin: 4px 0;
-    color: #E0E0E0 !important;
+    color: var(--text-primary) !important;
+    box-shadow: inset 0 0 20px rgba(255, 68, 68, 0.05);
 }
 .alert-high {
-    background: linear-gradient(135deg, #1a110a 0%, #2d1a0f 100%) !important;
-    border-left: 4px solid #FFB347 !important;
+    background: linear-gradient(135deg, #1a1008 0%, #2a1a0f 100%) !important;
+    border-left: 4px solid var(--orange) !important;
     padding: 10px 14px;
     border-radius: 0 6px 6px 0;
     margin: 4px 0;
-    color: #E0E0E0 !important;
+    color: var(--text-primary) !important;
+    box-shadow: inset 0 0 20px rgba(255, 179, 71, 0.05);
 }
 .alert-medium {
-    background: linear-gradient(135deg, #1a1a0a 0%, #2d2a0f 100%) !important;
-    border-left: 4px solid #FFD700 !important;
+    background: linear-gradient(135deg, #191900 0%, #2a2a0a 100%) !important;
+    border-left: 4px solid var(--yellow) !important;
     padding: 10px 14px;
     border-radius: 0 6px 6px 0;
     margin: 4px 0;
-    color: #E0E0E0 !important;
+    color: var(--text-primary) !important;
+    box-shadow: inset 0 0 20px rgba(255, 215, 0, 0.05);
+}
+.alert-low {
+    background: linear-gradient(135deg, #081818 0%, #0f2525 100%) !important;
+    border-left: 4px solid var(--accent-teal) !important;
+    padding: 10px 14px;
+    border-radius: 0 6px 6px 0;
+    margin: 4px 0;
+    color: var(--text-primary) !important;
+}
+
+/* ── Status badge helpers ── */
+.badge-online {
+    display: inline-block;
+    background: rgba(0, 201, 177, 0.15);
+    color: var(--accent-teal);
+    border: 1px solid var(--accent-teal);
+    border-radius: 12px;
+    padding: 2px 10px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    font-family: 'JetBrains Mono', monospace;
+}
+.badge-offline {
+    display: inline-block;
+    background: rgba(255, 68, 68, 0.12);
+    color: var(--red);
+    border: 1px solid var(--red);
+    border-radius: 12px;
+    padding: 2px 10px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    font-family: 'JetBrains Mono', monospace;
+}
+.badge-warning {
+    display: inline-block;
+    background: rgba(255, 179, 71, 0.12);
+    color: var(--orange);
+    border: 1px solid var(--orange);
+    border-radius: 12px;
+    padding: 2px 10px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    font-family: 'JetBrains Mono', monospace;
 }
 
 </style>
@@ -254,26 +552,106 @@ td {
 
 
 def apply_dark_theme():
-    """Call this at the top of every page to apply dark theme"""
+    """Call this at the top of every page to apply dark theme."""
     st.markdown(DARK_CSS, unsafe_allow_html=True)
 
 
 def apply_theme():
-    """Alias for backward compatibility"""
+    """Alias for backward compatibility."""
     apply_dark_theme()
 
 
-def main_header(title, subtitle=None):
-    """Styled page header"""
+def main_header(title: str, subtitle: str = None):
+    """Styled page header with teal accent bar."""
+    sub_html = (
+        f'<p style="color:#4FC3F7; margin:0.25rem 0 0 0; font-size:0.92rem; '
+        f'font-family:\'Rajdhani\',sans-serif; letter-spacing:0.04em;">{subtitle}</p>'
+        if subtitle else ""
+    )
     html = f"""
     <div style="
         border-bottom: 2px solid #00C9B1;
         padding: 0 0 1rem 0;
         margin-bottom: 1.5rem;
+        position: relative;
     ">
-        <h1 style="color:#00C9B1; margin:0; font-size:1.9rem;">{title}</h1>
-        {f'<p style="color:#4FC3F7; margin:0.2rem 0 0 0; font-size:0.9rem;">{subtitle}</p>'
-         if subtitle else ''}
+        <div style="
+            position: absolute;
+            left: 0; top: 0;
+            width: 4px; height: 100%;
+            background: linear-gradient(180deg, #00C9B1, #0077B6);
+            border-radius: 2px;
+        "></div>
+        <h1 style="
+            color:#00C9B1;
+            margin: 0 0 0 1rem;
+            font-size: 1.85rem;
+            font-family: 'Rajdhani', sans-serif;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+        ">{title}</h1>
+        <div style="margin-left: 1rem;">{sub_html}</div>
+    </div>
+    """
+    st.markdown(html, unsafe_allow_html=True)
+
+
+def section_header(title: str, icon: str = ""):
+    """Smaller section header for use inside tabs."""
+    html = f"""
+    <div style="
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin: 1.2rem 0 0.6rem 0;
+        padding-bottom: 0.4rem;
+        border-bottom: 1px solid #1E3A5F;
+    ">
+        {'<span style="font-size:1.1rem;">' + icon + '</span>' if icon else ''}
+        <h3 style="
+            color: #4FC3F7;
+            margin: 0;
+            font-family: 'Rajdhani', sans-serif;
+            font-weight: 600;
+            font-size: 1.05rem;
+            letter-spacing: 0.04em;
+        ">{title}</h3>
+    </div>
+    """
+    st.markdown(html, unsafe_allow_html=True)
+
+
+def status_card(label: str, value: str, status: str = "normal"):
+    """
+    Inline status card. status: 'normal' | 'good' | 'warning' | 'critical'
+    """
+    color_map = {
+        "good":     ("#00C9B1", "rgba(0,201,177,0.10)"),
+        "warning":  ("#FFB347", "rgba(255,179,71,0.10)"),
+        "critical": ("#FF4444", "rgba(255,68,68,0.10)"),
+        "normal":   ("#4FC3F7", "rgba(79,195,247,0.08)"),
+    }
+    color, bg = color_map.get(status, color_map["normal"])
+    html = f"""
+    <div style="
+        background: {bg};
+        border: 1px solid {color};
+        border-left: 4px solid {color};
+        border-radius: 6px;
+        padding: 0.55rem 0.9rem;
+        margin: 0.3rem 0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    ">
+        <span style="color:#8899AA; font-size:0.82rem; font-family:'Rajdhani',sans-serif;
+                     font-weight:600; text-transform:uppercase; letter-spacing:0.05em;">
+            {label}
+        </span>
+        <span style="color:{color}; font-family:'JetBrains Mono',monospace;
+                     font-size:0.95rem; font-weight:600;">
+            {value}
+        </span>
     </div>
     """
     st.markdown(html, unsafe_allow_html=True)
