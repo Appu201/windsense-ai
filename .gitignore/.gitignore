@@ -3,3 +3,5 @@ __pycache__/
 .env
 *.pkl
 windsense.db
+models/windsense_rf_model.pkl
+models/feature_names.pkl
