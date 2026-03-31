@@ -582,7 +582,8 @@ def load_historical_data():
 @st.cache_resource
 def load_ml_model():
     try:
-        with open(MODEL_PATH + 'windsense_rf_model.pkl', 'rb') as f:
+        import gzip
+        with gzip.open(MODEL_PATH + 'windsense_rf_model.pkl.gz', 'rb') as f:
             model = pickle.load(f)
         with open(MODEL_PATH + 'feature_names.pkl', 'rb') as f:
             features = pickle.load(f)
@@ -590,7 +591,6 @@ def load_ml_model():
             metadata = json.load(f)
         return model, features, metadata
     except Exception as e:
-        st.warning(f"Model not found. Using demo mode. Error: {e}")
         return None, None, None
 
 @st.cache_data

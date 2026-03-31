@@ -1,12 +1,11 @@
 {
   "model_type": "RandomForestClassifier",
-  "n_estimators": 200,
-  "max_depth": 25,
-  "accuracy": 26.03,
-  "cv_mean_accuracy": 37.9,
-  "cv_std": 5.36,
-  "training_samples": "all episodes",
-  "n_features": 12,
+  "n_estimators": 50,
+  "max_depth": 20,
+  "accuracy": 82.46,
+  "cv_mean_accuracy": 84.15,
+  "cv_std": 2.67,
+  "n_features": 20,
   "n_classes": 19,
   "classes": [
     "Converter Circuit Fault",
@@ -29,20 +28,28 @@
     "Transformer Oil Temperature High",
     "Yaw System Hydraulic Fault"
   ],
-  "training_date": "2026-03-31 15:54:59.381792",
+  "training_date": "2026-03-31 16:34:08.905922",
   "feature_names": [
     "duration_hours",
     "duration_minutes",
+    "duration_log",
     "is_long_duration",
     "is_short_duration",
     "is_medium_duration",
     "hour_of_day",
-    "is_peak_hours",
-    "season",
+    "day_of_week",
     "month",
+    "season",
+    "is_weekend",
+    "is_peak_hours",
     "turbine_id_num",
     "status_type_num",
-    "turbine_alarm_frequency"
+    "is_status_5",
+    "is_status_4",
+    "is_status_3",
+    "turbine_alarm_frequency",
+    "turbine_avg_duration",
+    "duration_rank"
   ],
-  "phase": "Phase 2 retrain \u2014 duration + time features for grid alarm separation"
+  "phase": "Phase 2 retrain \u2014 SMOTE + balanced RF"
 }
