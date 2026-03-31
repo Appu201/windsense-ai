@@ -968,22 +968,20 @@ with tab1:
             alarm_id  = f"TEST-{_random.randint(1000, 9999)}"
             turbine   = _random.randint(1, 5)
             timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
             alarm = {
-                "alarm_id":        alarm_id,
-                "timestamp":       timestamp,
-                "asset_id":        turbine,
-                "priority":        "CRITICAL",
-                "predicted_type":  alarm_type,
-                "confidence":      round(_random.uniform(92, 99), 1),
-                "status_type_id":  5.0,
-                "sensor_11_avg":   round(_random.uniform(40, 80), 2),
-                "sensor_12_avg":   round(_random.uniform(35, 75), 2),
-                "sensor_41_avg":   round(_random.uniform(25, 65), 2),
-                "power_30_avg":    round(_random.uniform(100, 500), 2),
+                "alarm_id":         alarm_id,
+                "timestamp":        timestamp,
+                "asset_id":         turbine,
+                "priority":         "CRITICAL",
+                "predicted_type":   alarm_type,
+                "confidence":       round(_random.uniform(92, 99), 1),
+                "status_type_id":   5.0,
+                "sensor_11_avg":    round(_random.uniform(40, 80), 2),
+                "sensor_12_avg":    round(_random.uniform(35, 75), 2),
+                "sensor_41_avg":    round(_random.uniform(25, 65), 2),
+                "power_30_avg":     round(_random.uniform(100, 500), 2),
                 "wind_speed_3_avg": round(_random.uniform(3, 15), 2),
             }
-
             st.session_state.alarm_buffer.insert(0, alarm)
             process_critical_alarm(alarm_type, turbine, alarm_id, severity="CRITICAL")
             send_notification(alarm)
@@ -1002,9 +1000,7 @@ with tab1:
             st.success("✅ Test alarm fired — check Tab 4 & Tab 7 for status")
             st.rerun()
 
-        st.caption(
-            "Uses the live pipeline: Email ✉️ + WhatsApp 📲 → Acknowledge link updates Tab 7 automatically."
-        )
+        st.caption("Uses the live pipeline: Email ✉️ + WhatsApp 📲 → Acknowledge link updates Tab 7 automatically.")
     # ===== END TEMP SIMULATOR =====
 
     st.divider()
@@ -1015,8 +1011,8 @@ with tab1:
         for alarm in latest_alarms:
             priority_colors = {
                 'CRITICAL': ('border-left: 4px solid #FF4444', '#FF6B6B'),
-                'HIGH': ('border-left: 4px solid #FFB347', '#FFB347'),
-                'MEDIUM': ('border-left: 4px solid #FFD700', '#FFD700'),
+                'HIGH':     ('border-left: 4px solid #FFB347', '#FFB347'),
+                'MEDIUM':   ('border-left: 4px solid #FFD700', '#FFD700'),
             }
             border_style, text_color = priority_colors.get(alarm['priority'], ('border-left: 4px solid #888', '#888'))
             st.markdown(f"""
@@ -1041,52 +1037,55 @@ with tab1:
         uncertain_count = 0
         anomaly_count = 0
 
-        for _, row in alarm_df.iterrows():
+        for _idx, row in alarm_df.iterrows():
             conf = row.get('confidence', 0)
             pred = row.get('predicted_type', 'Unknown')
 
-            if conf < 70:
-                flagged_type = "UNCERTAIN - Manual Review Required"
-                flag_status = "LOW Confidence"
+            # Three-tier: check iso_detector first
+            _is_anomaly = False
+            if ('iso_detector' in st.session_state
+                    and st.session_state.iso_detector is not None
+                    and st.session_state.iso_detector.is_trained):
+                _is_anomaly, _score = st.session_state.iso_detector.predict(row.to_dict())
+
+            if _is_anomaly:
+                flagged_type = "🔴 UNKNOWN ANOMALY — Isolation Forest Alert"
+                flag_status  = "🔴 Unknown / New Pattern"
+                anomaly_count += 1
+                # Write to file-based log so Tab 1 review queue and Tab 7 both pick it up
+                save_anomaly_to_log(
+                    row.get('alarm_id', 'N/A'),
+                    dict(row),
+                    {'is_anomaly': True, 'anomaly_score': float(_score)}
+                )
+            elif conf < 70:
+                flagged_type = "⚠️ UNCERTAIN — Manual Review Required"
+                flag_status  = "🟡 Low Confidence"
                 uncertain_count += 1
             elif conf < 85:
                 flagged_type = pred
-                flag_status = "MODERATE Confidence"
+                flag_status  = "🟠 Moderate Confidence"
             else:
                 flagged_type = pred
-                flag_status = "HIGH Confidence"
-
-            anomaly_tag = ""
-            if st.session_state.iso_detector.is_trained:
-                is_anomaly, anomaly_score = st.session_state.iso_detector.predict(dict(row))
-                if is_anomaly:
-                    anomaly_tag = "ANOMALY"
-                    anomaly_count += 1
-                    save_anomaly_to_log(row.get('alarm_id', 'N/A'), dict(row), {'is_anomaly': is_anomaly, 'anomaly_score': anomaly_score})
-                else:
-                    anomaly_tag = "Known"
-            else:
-                anomaly_tag = "-"
+                flag_status  = "🟢 High Confidence"
 
             display_rows.append({
-                'Alarm ID': row.get('alarm_id', 'N/A'),
-                'Timestamp': row.get('timestamp', 'N/A'),
-                'Turbine': f"T-{row.get('asset_id', 'N/A')}",
-                'Priority': row.get('priority', 'N/A'),
+                'Alarm ID':             row.get('alarm_id', 'N/A'),
+                'Timestamp':            row.get('timestamp', 'N/A'),
+                'Turbine':              f"T-{row.get('asset_id', 'N/A')}",
+                'Priority':             row.get('priority', 'N/A'),
                 'Alarm Classification': flagged_type,
-                'Confidence (%)': f"{conf:.1f}%",
-                'Confidence Flag': flag_status,
-                'Anomaly Status': anomaly_tag
+                'Confidence (%)':       f"{conf:.1f}%",
+                'Confidence Flag':      flag_status
             })
 
         display_df = pd.DataFrame(display_rows)
-        st.table(display_df)
-
-        if uncertain_count > 0:
-            st.warning(f"⚠️ {uncertain_count} alarm(s) flagged as uncertain (confidence <70%). These require manual inspection.")
+        st.dataframe(display_df, use_container_width=True, height=400)
 
         if anomaly_count > 0:
-            st.error(f"🚨 {anomaly_count} ANOMALY alarm(s) detected — sensor patterns don't match any known alarm type.")
+            st.error(f"🔴 {anomaly_count} UNKNOWN ANOMALY alarm(s) detected by Isolation Forest. Review in Tab 7.")
+        if uncertain_count > 0:
+            st.warning(f"⚠️ {uncertain_count} alarm(s) flagged as uncertain (confidence <70%). These require manual inspection.")
 
         csv = display_df.to_csv(index=False).encode('utf-8')
         st.download_button("📥 Download Alarm Log (CSV)", csv, "windsense_alarm_log.csv", "text/csv", use_container_width=True)
@@ -1102,12 +1101,12 @@ with tab1:
 
             for i, anomaly in enumerate(unreviewed[:5]):
                 with st.expander(
-                    f"🚨 {anomaly['alarm_id']} | Turbine T-{anomaly['turbine']} | Score: {anomaly['anomaly_score']}",
+                    f"🚨 {anomaly['alarm_id']} | Turbine T-{anomaly.get('asset_id', anomaly.get('turbine', 'N/A'))} | Score: {anomaly['anomaly_score']}",
                     expanded=False
                 ):
-                    st.write(f"**Type detected:** {anomaly['alarm_type']}")
-                    st.write(f"**Time:** {anomaly['timestamp']}")
-                    st.write(f"**Reason:** {anomaly['reason']}")
+                    st.write(f"**Type detected:** {anomaly.get('alarm_type', anomaly.get('predicted_type', 'N/A'))}")
+                    st.write(f"**Time:** {anomaly.get('timestamp', anomaly.get('logged_at', 'N/A'))}")
+                    st.write(f"**Reason:** {anomaly.get('reason', 'Flagged by Isolation Forest')}")
                     col_yes, col_no = st.columns(2)
                     with col_yes:
                         if st.button(f"✅ Add to Known", key=f"t1_add_{i}_{anomaly['alarm_id']}"):
@@ -1129,7 +1128,11 @@ with tab1:
         with col1:
             st.subheader("📊 Alarms by Type")
             type_counts = pd.DataFrame(st.session_state.alarm_buffer)['predicted_type'].value_counts()
-            fig = px.bar(x=type_counts.index, y=type_counts.values, labels={'x': 'Alarm Type', 'y': 'Count'}, color=type_counts.values, color_continuous_scale='Reds')
+            fig = px.bar(
+                x=type_counts.index, y=type_counts.values,
+                labels={'x': 'Alarm Type', 'y': 'Count'},
+                color=type_counts.values, color_continuous_scale='Reds'
+            )
             fig.update_layout(
                 height=400, showlegend=False,
                 paper_bgcolor='#0D1B2A', plot_bgcolor='#0D1B2A',
@@ -1142,7 +1145,11 @@ with tab1:
         with col2:
             st.subheader("🌀 Alarms by Turbine")
             turbine_counts = pd.DataFrame(st.session_state.alarm_buffer)['asset_id'].value_counts()
-            fig = px.pie(values=turbine_counts.values, names=[f"T-{tid}" for tid in turbine_counts.index], hole=0.4)
+            fig = px.pie(
+                values=turbine_counts.values,
+                names=[f"T-{tid}" for tid in turbine_counts.index],
+                hole=0.4
+            )
             fig.update_layout(
                 height=400,
                 paper_bgcolor='#0D1B2A', plot_bgcolor='#0D1B2A',
@@ -1154,8 +1161,8 @@ with tab1:
         st.divider()
         st.subheader("🔍 Root Cause Analysis - Latest Alarm")
         latest_alarm = st.session_state.alarm_buffer[0]
-        sensor_data = {k: v for k, v in latest_alarm.items() if 'sensor' in k or 'power' in k or 'wind' in k}
-        rca_result = st.session_state.rca_engine.analyze(latest_alarm['predicted_type'], sensor_data)
+        sensor_data  = {k: v for k, v in latest_alarm.items() if 'sensor' in k or 'power' in k or 'wind' in k}
+        rca_result   = st.session_state.rca_engine.analyze(latest_alarm['predicted_type'], sensor_data)
         st.write(f"**🔍 Root Cause:** {rca_result['primary_cause']}")
         st.write(f"**Confidence:** {rca_result['confidence']}%")
         st.write("**Recommended Actions (Elimination Strategy):**")
@@ -1165,19 +1172,23 @@ with tab1:
         st.divider()
         st.subheader("📉 Live Sensor Feed — Real-Time Readings")
 
-        sensor_df = pd.DataFrame(st.session_state.alarm_buffer)
-        sensors_to_plot = ['sensor_11_avg', 'sensor_12_avg', 'sensor_41_avg', 'power_30_avg', 'wind_speed_3_avg']
+        sensor_df         = pd.DataFrame(st.session_state.alarm_buffer)
+        sensors_to_plot   = ['sensor_11_avg', 'sensor_12_avg', 'sensor_41_avg', 'power_30_avg', 'wind_speed_3_avg']
         available_sensors = [s for s in sensors_to_plot if s in sensor_df.columns]
         sensor_labels = {
-            'sensor_11_avg': 'Gearbox Bearing Temp (°C)',
-            'sensor_12_avg': 'Gearbox Oil Temp (°C)',
-            'sensor_41_avg': 'Hydraulic Oil Temp (°C)',
-            'power_30_avg': 'Grid Power (kW)',
+            'sensor_11_avg':    'Gearbox Bearing Temp (°C)',
+            'sensor_12_avg':    'Gearbox Oil Temp (°C)',
+            'sensor_41_avg':    'Hydraulic Oil Temp (°C)',
+            'power_30_avg':     'Grid Power (kW)',
             'wind_speed_3_avg': 'Wind Speed (m/s)'
         }
 
         if available_sensors:
-            selected_sensor = st.selectbox("Select sensor to plot:", available_sensors, format_func=lambda s: sensor_labels.get(s, s), key="sensor_select")
+            selected_sensor = st.selectbox(
+                "Select sensor to plot:", available_sensors,
+                format_func=lambda s: sensor_labels.get(s, s),
+                key="sensor_select"
+            )
             plot_df = sensor_df[['alarm_id', selected_sensor]].copy()
             plot_df = plot_df.dropna(subset=[selected_sensor]).tail(20)
 
@@ -1960,17 +1971,13 @@ with tab7:
 with tab8:
     st.markdown('<div class="main-header">🏭 OPC UA Industrial Data Feed</div>', unsafe_allow_html=True)
     st.divider()
-
     st.session_state.opcua_sim = OPCUASimulator()
-
     for alarm in st.session_state.alarm_buffer[:5]:
         turbine_id = alarm['asset_id']
         if turbine_id in st.session_state.opcua_sim.turbine_ids:
             st.session_state.opcua_sim.active_alarms[turbine_id] = alarm['predicted_type']
-
     st.subheader("⚡ Live Fleet Status")
     fleet = st.session_state.opcua_sim.get_fleet_summary()
-
     col1, col2, col3, col4 = st.columns(4)
     with col1:
         st.metric("🔋 Total Fleet Power", f"{fleet['total_power_kw']:,.0f} kW")
@@ -1980,20 +1987,33 @@ with tab8:
         st.metric("🚨 Turbines in Alarm", fleet['turbines_in_alarm'], delta_color="inverse")
     with col4:
         st.metric("📡 Grid Frequency", f"{fleet['grid_frequency_hz']} Hz")
-
     if fleet['active_alarm_types']:
         for alarm in fleet['active_alarm_types']:
             st.error(f"🚨 ACTIVE ALARM DETECTED: {alarm}")
-
     st.divider()
     st.subheader("📋 OPC UA Node Data — Live Snapshot")
-
     readings = st.session_state.opcua_sim.get_current_readings()
     readings_df = pd.DataFrame(readings)
     display_readings = readings_df[['node_id', 'description', 'value', 'unit', 'status', 'timestamp']].copy()
     display_readings.columns = ['Node ID', 'Description', 'Value', 'Unit', 'Status', 'Timestamp']
     st.table(display_readings)
 
+    # Wire OPC UA anomaly readings into iso_detector  ← now inside tab8
+    for _reading in readings:
+        if _reading.get('is_anomaly', False):
+            _synthetic_alarm = {
+                'alarm_id': f"OPC-{_reading.get('node_id', 'UNK')}-{int(time.time())}",
+                'asset_id': _reading.get('turbine_id', 'OPC'),
+                'predicted_type': 'OPC UA Anomaly',
+                'sensor_11_avg': float(_reading.get('value', 0)) if 'temp' in str(_reading.get('node_id', '')).lower() else 0.0,
+                'sensor_12_avg': 0.0,
+                'sensor_41_avg': float(_reading.get('value', 0)) if 'hydraulic' in str(_reading.get('node_id', '')).lower() else 0.0,
+                'power_30_avg': float(_reading.get('value', 0)) if 'power' in str(_reading.get('node_id', '')).lower() else 0.0,
+                'wind_speed_3_avg': 0.0,
+            }
+            _anomaly_score = float(_reading.get('anomaly_score', 0.75))
+            if 'iso_detector' in st.session_state and st.session_state.iso_detector is not None:
+                st.session_state.iso_detector.log_anomaly(_synthetic_alarm, _anomaly_score)
     alarming_nodes = [r for r in readings if r.get('alarm_active', False) or r.get('is_anomaly', False)]
     if alarming_nodes:
         st.markdown("**🚨 Active Alarm / Anomaly Nodes:**")
@@ -2011,13 +2031,11 @@ with tab8:
             """, unsafe_allow_html=True)
     else:
         st.success("✅ All OPC UA nodes operating normally")
-
     st.divider()
     col_r1, col_r2, col_r3 = st.columns([1, 2, 1])
     with col_r2:
         if st.button("🔄 Refresh OPC UA Data", use_container_width=True, type="primary"):
             st.rerun()
-
     st.caption("📌 In production, this feed would connect to the wind farm's OPC UA server via opcua-asyncio.")
 
 # ═══════════════════════════════════════════════════════════════════

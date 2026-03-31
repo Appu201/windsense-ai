@@ -29,7 +29,7 @@
     "Transformer Oil Temperature High",
     "Yaw System Hydraulic Fault"
   ],
-  "training_date": "2026-03-23 22:00:38.984913",
+  "training_date": "2026-03-31 15:54:59.381792",
   "feature_names": [
     "duration_hours",
     "duration_minutes",
@@ -44,5 +44,5 @@
     "status_type_num",
     "turbine_alarm_frequency"
   ],
-  "phase": "Phase 2 retrain — duration + time features for grid alarm separation"
+  "phase": "Phase 2 retrain \u2014 duration + time features for grid alarm separation"
 }
