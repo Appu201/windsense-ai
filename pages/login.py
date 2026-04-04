@@ -38,10 +38,9 @@ def verify_login(username, password):
 st.set_page_config(
     page_title="WindSense AI — Login",
     page_icon="🌀",
-    layout="centered"
+    layout="centered",
+    initial_sidebar_state="expanded"
 )
-
-st.markdown("<style>[data-testid='stSidebarNav']{display:none !important;}</style>", unsafe_allow_html=True)
 
 ack_id = st.query_params.get('ack', '')
 if ack_id:
