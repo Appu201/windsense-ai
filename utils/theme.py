@@ -267,6 +267,26 @@ DARK_CSS = """
     color: var(--text-primary) !important;
     border: 1px solid var(--border-dim) !important;
     border-radius: 6px !important;
+    padding: 2px 8px !important;
+    min-height: 38px !important;
+    box-shadow: none !important;
+}
+
+.stSelectbox > div > div > div,
+.stMultiSelect > div > div > div {
+    color: var(--text-primary) !important;
+    font-family: 'Rajdhani', sans-serif !important;
+    font-size: 0.92rem !important;
+}
+
+.stSelectbox label,
+.stMultiSelect label {
+    color: var(--text-muted) !important;
+    font-size: 0.8rem !important;
+    font-weight: 600 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.05em !important;
+    margin-bottom: 4px !important;
 }
 
 /* Dropdown options */
