@@ -460,17 +460,50 @@ code {
     display: none !important;
 }
 
-[data-testid="stSidebarCollapseButton"] button,
+[data-testid="stExpandSidebarButton"] {
+    position: fixed !important;
+    top: 1rem !important;
+    left: 1rem !important;
+    z-index: 999 !important;
+}
+
 [data-testid="stExpandSidebarButton"] button {
-    background-color: transparent !important;
+    background: transparent !important;
     border: none !important;
     padding: 0 !important;
     width: 24px !important;
     height: 24px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
 }
 
-[data-testid="stSidebarCollapseButton"] button span,
-[data-testid="stExpandSidebarButton"] button span {
+[data-testid="stExpandSidebarButton"] button * {
+    display: none !important;
+}
+
+[data-testid="stExpandSidebarButton"] button::after {
+    content: '>>' !important;
+    color: #00C9B1 !important;
+    font-weight: 700 !important;
+    font-size: 0.9rem !important;
+    display: block !important;
+    font-family: 'Rajdhani', sans-serif !important;
+    line-height: 1 !important;
+}
+
+[data-testid="stSidebarCollapseButton"] button {
+    background: transparent !important;
+    border: none !important;
+    padding: 0 !important;
+    width: 24px !important;
+    height: 24px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+[data-testid="stSidebarCollapseButton"] button * {
     display: none !important;
 }
 
@@ -479,15 +512,9 @@ code {
     color: #00C9B1 !important;
     font-weight: 700 !important;
     font-size: 0.9rem !important;
+    display: block !important;
     font-family: 'Rajdhani', sans-serif !important;
-}
-
-[data-testid="stExpandSidebarButton"] button::after {
-    content: '>>' !important;
-    color: #00C9B1 !important;
-    font-weight: 700 !important;
-    font-size: 0.9rem !important;
-    font-family: 'Rajdhani', sans-serif !important;
+    line-height: 1 !important;
 }
 /* ── Markdown tables ── */
 table {
