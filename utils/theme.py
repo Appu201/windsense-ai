@@ -457,29 +457,22 @@ code {
 
 /* ── Sidebar collapse button >> << ── */
 [data-testid="stIconMaterial"] {
-    display: none !important;
+    visibility: hidden !important;
+    width: 0 !important;
+    height: 0 !important;
+    position: absolute !important;
 }
 
-[data-testid="stExpandSidebarButton"] {
-    position: fixed !important;
-    top: 1rem !important;
-    left: 1rem !important;
-    z-index: 999 !important;
-}
-
-[data-testid="stExpandSidebarButton"] button {
+[data-testid="stExpandSidebarButton"] button,
+[data-testid="stSidebarCollapseButton"] button {
     background: transparent !important;
     border: none !important;
     padding: 0 !important;
     width: 24px !important;
     height: 24px !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-}
-
-[data-testid="stExpandSidebarButton"] button * {
-    display: none !important;
+    position: relative !important;
+    color: transparent !important;
+    font-size: 0 !important;
 }
 
 [data-testid="stExpandSidebarButton"] button::after {
@@ -487,24 +480,11 @@ code {
     color: #00C9B1 !important;
     font-weight: 700 !important;
     font-size: 0.9rem !important;
-    display: block !important;
     font-family: 'Rajdhani', sans-serif !important;
-    line-height: 1 !important;
-}
-
-[data-testid="stSidebarCollapseButton"] button {
-    background: transparent !important;
-    border: none !important;
-    padding: 0 !important;
-    width: 24px !important;
-    height: 24px !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-}
-
-[data-testid="stSidebarCollapseButton"] button * {
-    display: none !important;
+    position: absolute !important;
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
 }
 
 [data-testid="stSidebarCollapseButton"] button::after {
@@ -512,9 +492,11 @@ code {
     color: #00C9B1 !important;
     font-weight: 700 !important;
     font-size: 0.9rem !important;
-    display: block !important;
     font-family: 'Rajdhani', sans-serif !important;
-    line-height: 1 !important;
+    position: absolute !important;
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
 }
 /* ── Markdown tables ── */
 table {
