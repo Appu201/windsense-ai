@@ -178,24 +178,6 @@ DARK_CSS = """
     overflow: hidden;
 }
 
-.dvn-scroller {
-    background-color: var(--bg-secondary) !important;
-}
-
-.glideDataEditor {
-    background-color: var(--bg-secondary) !important;
-    color: var(--text-secondary) !important;
-}
-
-.dvn-scroller * {
-    color: var(--text-secondary) !important;
-}
-
-[data-testid="stDataFrame"] * {
-    color: var(--text-secondary) !important;
-    background-color: var(--bg-secondary) !important;
-}
-
 /* ── Buttons ── */
 .stButton > button {
     background: linear-gradient(135deg, #007A6E 0%, #005580 100%) !important;
@@ -223,589 +205,59 @@ DARK_CSS = """
     transform: translateY(-1px) !important;
 }
 
-.stButton > button:active {
-    transform: translateY(0px) !important;
-}
-
-/* ── Text inputs / selects ── */
-.stTextInput input,
-.stTextArea textarea,
-.stNumberInput input {
-    background-color: var(--bg-secondary) !important;
-    color: var(--text-primary) !important;
-    border: 1px solid var(--border-dim) !important;
-    border-radius: 6px !important;
-    font-family: 'JetBrains Mono', monospace !important;
-    font-size: 0.88rem !important;
-}
-
-.stTextInput input:focus,
-.stTextArea textarea:focus,
-.stNumberInput input:focus {
-    border-color: var(--accent-teal) !important;
-    box-shadow: 0 0 0 1px var(--accent-teal) !important;
-    outline: none !important;
-}
-
-.stTextInput label,
-.stTextArea label,
-.stNumberInput label,
-.stSelectbox label,
-.stMultiSelect label,
-.stSlider label,
-.stDateInput label {
-    color: var(--text-muted) !important;
-    font-size: 0.8rem !important;
-    font-weight: 600 !important;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-}
-
-.stSelectbox > div > div,
-.stMultiSelect > div > div {
-    background-color: var(--bg-secondary) !important;
-    color: var(--text-primary) !important;
-    border: 1px solid var(--border-dim) !important;
-    border-radius: 6px !important;
-    padding: 2px 8px !important;
-    min-height: 38px !important;
-    box-shadow: none !important;
-}
-
-.stSelectbox > div > div > div,
-.stMultiSelect > div > div > div {
-    color: var(--text-primary) !important;
-    font-family: 'Rajdhani', sans-serif !important;
-    font-size: 0.92rem !important;
-}
-
-.stSelectbox label,
-.stMultiSelect label {
-    color: var(--text-muted) !important;
-    font-size: 0.8rem !important;
-    font-weight: 600 !important;
-    text-transform: uppercase !important;
-    letter-spacing: 0.05em !important;
-    margin-bottom: 4px !important;
-}
-
-/* Dropdown options */
-[data-baseweb="popover"] *,
-[data-baseweb="menu"] * {
-    background-color: var(--bg-secondary) !important;
-    color: var(--text-primary) !important;
-}
-
-[data-baseweb="option"]:hover {
-    background-color: rgba(0, 201, 177, 0.12) !important;
-    color: var(--accent-teal) !important;
-}
-
-/* ── Sliders ── */
-[data-testid="stSlider"] > div > div > div > div {
-    background: var(--accent-teal) !important;
-}
-
-[data-testid="stSlider"] [role="slider"] {
-    background: var(--accent-teal) !important;
-    border: 2px solid var(--bg-primary) !important;
-    box-shadow: 0 0 6px rgba(0, 201, 177, 0.4) !important;
-}
-
-/* ── Checkboxes & Radio ── */
-[data-testid="stCheckbox"] label,
-[data-testid="stRadio"] label {
-    color: var(--text-secondary) !important;
-}
-
-[data-baseweb="checkbox"] span,
-[data-baseweb="radio"] span {
-    border-color: var(--border-dim) !important;
-    background-color: var(--bg-secondary) !important;
-}
-
-/* ── Expanders ── */
-.streamlit-expanderHeader {
-    background-color: var(--bg-secondary) !important;
-    color: var(--accent-teal) !important;
-    border: 1px solid var(--border-dim) !important;
-    border-radius: 6px !important;
-    font-family: 'Rajdhani', sans-serif !important;
-    font-weight: 600 !important;
-    letter-spacing: 0.03em;
-}
-
-.streamlit-expanderHeader:hover {
-    border-color: var(--accent-teal) !important;
-    background-color: rgba(0, 201, 177, 0.05) !important;
-}
-
-.streamlit-expanderContent {
-    background-color: var(--bg-deep) !important;
-    border: 1px solid var(--border-dim) !important;
-    border-top: none !important;
-    border-radius: 0 0 6px 6px !important;
-}
-
-/* ── Alert boxes ── */
-[data-testid="stAlert"] {
-    background-color: var(--bg-secondary) !important;
-    border-radius: 8px !important;
-}
-
-[data-testid="stAlert"][data-type="success"] {
-    border-left: 4px solid #00C9B1 !important;
-}
-
-[data-testid="stAlert"][data-type="error"] {
-    border-left: 4px solid var(--red) !important;
-}
-
-[data-testid="stAlert"][data-type="warning"] {
-    border-left: 4px solid var(--orange) !important;
-}
-
-[data-testid="stAlert"][data-type="info"] {
-    border-left: 4px solid var(--accent-blue) !important;
-}
-
-/* ── Progress bars ── */
-[data-testid="stProgressBar"] > div > div {
-    background: linear-gradient(90deg, var(--accent-teal), var(--accent-blue)) !important;
-    border-radius: 4px;
-}
-
-[data-testid="stProgressBar"] > div {
-    background-color: var(--bg-secondary) !important;
-    border-radius: 4px;
-}
-
-/* ── Dividers ── */
-hr {
-    border: none !important;
-    border-top: 1px solid var(--border-dim) !important;
-    margin: 1.2rem 0 !important;
-}
-
-/* ── Typography ── */
-h1 {
-    color: var(--accent-teal) !important;
-    font-family: 'Rajdhani', sans-serif !important;
-    font-weight: 700 !important;
-    letter-spacing: 0.04em;
-}
-h2 {
-    color: var(--accent-teal) !important;
-    font-family: 'Rajdhani', sans-serif !important;
-    font-weight: 600 !important;
-    letter-spacing: 0.03em;
-}
-h3 {
-    color: var(--accent-blue) !important;
-    font-family: 'Rajdhani', sans-serif !important;
-    font-weight: 600 !important;
-}
-h4, h5, h6 {
-    color: var(--accent-soft) !important;
-    font-family: 'Rajdhani', sans-serif !important;
-}
-p, li {
-    color: var(--text-secondary) !important;
-    line-height: 1.65;
-}
-label {
-    color: var(--text-secondary) !important;
-}
-strong {
-    color: #E8F4F8 !important;
-}
-code {
-    background-color: var(--bg-deep) !important;
-    color: var(--accent-teal) !important;
-    border: 1px solid var(--border-dim) !important;
-    border-radius: 4px;
-    font-family: 'JetBrains Mono', monospace !important;
-    font-size: 0.85em;
-    padding: 0.1em 0.35em;
-}
-
-/* ── Caption ── */
-[data-testid="stCaption"],
-.stCaption {
-    color: var(--text-faint) !important;
-    font-size: 0.78rem !important;
-}
-
-/* ── Spinner ── */
-[data-testid="stSpinner"] {
-    color: var(--accent-teal) !important;
-}
-
-/* ── Toast / notification ── */
-[data-testid="stToast"] {
-    background-color: var(--bg-secondary) !important;
-    border: 1px solid var(--accent-teal) !important;
-    color: var(--text-primary) !important;
-    border-radius: 8px !important;
-}
-
-/* ── Scrollbar ── */
-::-webkit-scrollbar { width: 5px; height: 5px; background: var(--bg-deep); }
-::-webkit-scrollbar-thumb { background: var(--accent-teal); border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: var(--accent-blue); }
-::-webkit-scrollbar-track { background: var(--bg-deep); }
-
-/* ── Sidebar collapse button >> << ── */
-[data-testid="stIconMaterial"] {
-    visibility: hidden !important;
-    width: 0 !important;
-    height: 0 !important;
-    position: absolute !important;
+/* ── Sidebar toggle (FIXED & VISIBLE) ── */
+[data-testid="stExpandSidebarButton"],
+[data-testid="stSidebarCollapseButton"] {
+    position: fixed !important;
+    top: 1rem !important;
+    left: 0.5rem !important;
+    z-index: 1000 !important;
 }
 
 [data-testid="stExpandSidebarButton"] button,
 [data-testid="stSidebarCollapseButton"] button {
-    background: transparent !important;
-    border: none !important;
+    background: rgba(13, 27, 42, 0.9) !important;
+    border: 1px solid #00C9B1 !important;
+    border-radius: 6px !important;
+    width: 36px !important;
+    height: 28px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
     padding: 0 !important;
-    width: 24px !important;
-    height: 24px !important;
-    position: relative !important;
-    color: transparent !important;
-    font-size: 0 !important;
+    backdrop-filter: blur(6px);
+}
+
+[data-testid="stExpandSidebarButton"] button *,
+[data-testid="stSidebarCollapseButton"] button * {
+    display: none !important;
 }
 
 [data-testid="stExpandSidebarButton"] button::after {
-    content: '>>' !important;
-    color: #00C9B1 !important;
-    font-weight: 700 !important;
-    font-size: 0.9rem !important;
-    font-family: 'Rajdhani', sans-serif !important;
-    position: absolute !important;
-    top: 50% !important;
-    left: 50% !important;
-    transform: translate(-50%, -50%) !important;
+    content: '>>';
+    color: #00C9B1;
+    font-weight: 700;
+    font-size: 0.95rem;
 }
 
 [data-testid="stSidebarCollapseButton"] button::after {
-    content: '<<' !important;
-    color: #00C9B1 !important;
-    font-weight: 700 !important;
-    font-size: 0.9rem !important;
-    font-family: 'Rajdhani', sans-serif !important;
-    position: absolute !important;
-    top: 50% !important;
-    left: 50% !important;
-    transform: translate(-50%, -50%) !important;
-}
-/* ── Markdown tables ── */
-table {
-    background-color: var(--bg-secondary) !important;
-    border-collapse: collapse;
-    width: 100%;
-    border-radius: 6px;
-    overflow: hidden;
-}
-th {
-    background-color: var(--border-dim) !important;
-    color: var(--accent-teal) !important;
-    font-family: 'Rajdhani', sans-serif !important;
-    font-weight: 700 !important;
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
-    font-size: 0.82rem;
-    padding: 9px 14px;
-    text-align: left;
-    border: 1px solid #162840;
-}
-td {
-    background-color: var(--bg-secondary) !important;
-    color: var(--text-secondary) !important;
-    padding: 7px 14px;
-    border: 1px solid #162840;
-    font-size: 0.9rem;
-}
-tr:hover td {
-    background-color: rgba(0, 201, 177, 0.04) !important;
-}
-
-/* ── Download button ── */
-[data-testid="stDownloadButton"] button {
-    background: linear-gradient(135deg, var(--border-dim) 0%, var(--bg-secondary) 100%) !important;
-    color: var(--accent-teal) !important;
-    border: 1px solid var(--accent-teal) !important;
-    border-radius: 6px !important;
-    font-family: 'Rajdhani', sans-serif !important;
-    font-weight: 600 !important;
-}
-
-/* ── Plotly chart containers ── */
-[data-testid="stPlotlyChart"] {
-    background-color: transparent !important;
-    border-radius: 8px;
-    overflow: hidden;
-}
-
-.js-plotly-plot .plotly .bg {
-    fill: var(--bg-secondary) !important;
-}
-
-/* ── Alert severity cards ── */
-.alert-critical {
-    background: linear-gradient(135deg, #1a0808 0%, #2a0f0f 100%) !important;
-    border-left: 4px solid var(--red) !important;
-    padding: 10px 14px;
-    border-radius: 0 6px 6px 0;
-    margin: 4px 0;
-    color: var(--text-primary) !important;
-    box-shadow: inset 0 0 20px rgba(255, 68, 68, 0.05);
-}
-.alert-high {
-    background: linear-gradient(135deg, #1a1008 0%, #2a1a0f 100%) !important;
-    border-left: 4px solid var(--orange) !important;
-    padding: 10px 14px;
-    border-radius: 0 6px 6px 0;
-    margin: 4px 0;
-    color: var(--text-primary) !important;
-    box-shadow: inset 0 0 20px rgba(255, 179, 71, 0.05);
-}
-.alert-medium {
-    background: linear-gradient(135deg, #191900 0%, #2a2a0a 100%) !important;
-    border-left: 4px solid var(--yellow) !important;
-    padding: 10px 14px;
-    border-radius: 0 6px 6px 0;
-    margin: 4px 0;
-    color: var(--text-primary) !important;
-    box-shadow: inset 0 0 20px rgba(255, 215, 0, 0.05);
-}
-.alert-low {
-    background: linear-gradient(135deg, #081818 0%, #0f2525 100%) !important;
-    border-left: 4px solid var(--accent-teal) !important;
-    padding: 10px 14px;
-    border-radius: 0 6px 6px 0;
-    margin: 4px 0;
-    color: var(--text-primary) !important;
-}
-
-/* ── Status badge helpers ── */
-.badge-online {
-    display: inline-block;
-    background: rgba(0, 201, 177, 0.15);
-    color: var(--accent-teal);
-    border: 1px solid var(--accent-teal);
-    border-radius: 12px;
-    padding: 2px 10px;
-    font-size: 0.78rem;
+    content: '<<';
+    color: #00C9B1;
     font-weight: 700;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    font-family: 'JetBrains Mono', monospace;
-}
-.badge-offline {
-    display: inline-block;
-    background: rgba(255, 68, 68, 0.12);
-    color: var(--red);
-    border: 1px solid var(--red);
-    border-radius: 12px;
-    padding: 2px 10px;
-    font-size: 0.78rem;
-    font-weight: 700;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    font-family: 'JetBrains Mono', monospace;
-}
-.badge-warning {
-    display: inline-block;
-    background: rgba(255, 179, 71, 0.12);
-    color: var(--orange);
-    border: 1px solid var(--orange);
-    border-radius: 12px;
-    padding: 2px 10px;
-    font-size: 0.78rem;
-    font-weight: 700;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.95rem;
 }
 
-/* ── Semi-3D card hover effects ── */
-.alert-critical, .alert-high, .alert-medium {
-    position: relative;
-    transform: perspective(800px) rotateX(0deg);
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-.alert-critical:hover {
-    transform: perspective(800px) rotateX(1deg) translateY(-1px);
-    box-shadow: 0 6px 20px rgba(255,68,68,0.35) !important;
-}
-.alert-high:hover {
-    transform: perspective(800px) rotateX(1deg) translateY(-1px);
-    box-shadow: 0 6px 20px rgba(255,136,0,0.35) !important;
-}
-.alert-medium:hover {
-    transform: perspective(800px) rotateX(1deg) translateY(-1px);
-    box-shadow: 0 6px 20px rgba(255,187,51,0.35) !important;
-}
-
-/* ── Animations ── */
-@keyframes shimmer {
-    0% { background-position: -1000px 0; }
-    100% { background-position: 1000px 0; }
-}
-.loading-shimmer {
-    background: linear-gradient(90deg, #0D1B2A 25%, #142333 50%, #0D1B2A 75%);
-    background-size: 1000px 100%;
-    animation: shimmer 2s infinite linear;
-    border-radius: 8px;
-    height: 20px;
-    margin: 4px 0;
-}
-
-@keyframes pulse-teal {
-    0%, 100% { box-shadow: 0 0 0 0 rgba(0,201,177,0.4); }
-    50% { box-shadow: 0 0 0 8px rgba(0,201,177,0); }
-}
-.pulse-active {
-    animation: pulse-teal 2s ease-in-out infinite;
+[data-testid="stExpandSidebarButton"] button:hover,
+[data-testid="stSidebarCollapseButton"] button:hover {
+    box-shadow: 0 0 10px rgba(0, 201, 177, 0.4);
+    border-color: #4FC3F7 !important;
 }
 
 </style>
 """
 
-
 def apply_dark_theme():
-    """Call this at the top of every page to apply dark theme."""
     st.markdown(DARK_CSS, unsafe_allow_html=True)
 
-
 def apply_theme():
-    """Alias for backward compatibility."""
     apply_dark_theme()
-
-
-def main_header(title: str, subtitle: str = None):
-    """Styled page header with teal accent bar."""
-    sub_html = (
-        f'<p style="color:#4FC3F7; margin:0.25rem 0 0 0; font-size:0.92rem; '
-        f'font-family:\'Rajdhani\',sans-serif; letter-spacing:0.04em;">{subtitle}</p>'
-        if subtitle else ""
-    )
-    html = f"""
-    <div style="
-        border-bottom: 2px solid #00C9B1;
-        padding: 0 0 1rem 0;
-        margin-bottom: 1.5rem;
-        position: relative;
-    ">
-        <div style="
-            position: absolute;
-            left: 0; top: 0;
-            width: 4px; height: 100%;
-            background: linear-gradient(180deg, #00C9B1, #0077B6);
-            border-radius: 2px;
-        "></div>
-        <h1 style="
-            color:#00C9B1;
-            margin: 0 0 0 1rem;
-            font-size: 1.85rem;
-            font-family: 'Rajdhani', sans-serif;
-            font-weight: 700;
-            letter-spacing: 0.05em;
-        ">{title}</h1>
-        <div style="margin-left: 1rem;">{sub_html}</div>
-    </div>
-    """
-    st.markdown(html, unsafe_allow_html=True)
-
-
-def section_header(title: str, icon: str = ""):
-    """Smaller section header for use inside tabs."""
-    html = f"""
-    <div style="
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        margin: 1.2rem 0 0.6rem 0;
-        padding-bottom: 0.4rem;
-        border-bottom: 1px solid #1E3A5F;
-    ">
-        {'<span style="font-size:1.1rem;">' + icon + '</span>' if icon else ''}
-        <h3 style="
-            color: #4FC3F7;
-            margin: 0;
-            font-family: 'Rajdhani', sans-serif;
-            font-weight: 600;
-            font-size: 1.05rem;
-            letter-spacing: 0.04em;
-        ">{title}</h3>
-    </div>
-    """
-    st.markdown(html, unsafe_allow_html=True)
-
-
-def status_card(label: str, value: str, status: str = "normal"):
-    """
-    Inline status card. status: 'normal' | 'good' | 'warning' | 'critical'
-    """
-    color_map = {
-        "good":     ("#00C9B1", "rgba(0,201,177,0.10)"),
-        "warning":  ("#FFB347", "rgba(255,179,71,0.10)"),
-        "critical": ("#FF4444", "rgba(255,68,68,0.10)"),
-        "normal":   ("#4FC3F7", "rgba(79,195,247,0.08)"),
-    }
-    color, bg = color_map.get(status, color_map["normal"])
-    html = f"""
-    <div style="
-        background: {bg};
-        border: 1px solid {color};
-        border-left: 4px solid {color};
-        border-radius: 6px;
-        padding: 0.55rem 0.9rem;
-        margin: 0.3rem 0;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    ">
-        <span style="color:#8899AA; font-size:0.82rem; font-family:'Rajdhani',sans-serif;
-                     font-weight:600; text-transform:uppercase; letter-spacing:0.05em;">
-            {label}
-        </span>
-        <span style="color:{color}; font-family:'JetBrains Mono',monospace;
-                     font-size:0.95rem; font-weight:600;">
-            {value}
-        </span>
-    </div>
-    """
-    st.markdown(html, unsafe_allow_html=True)
-
-
-def render_classifying_spinner(placeholder):
-    """
-    Renders an animated teal gauge in the given st.empty() placeholder
-    while classification is running. Call before model inference, clear after.
-    """
-    import plotly.graph_objects as go
-    fig = go.Figure(go.Indicator(
-        mode="gauge+number",
-        value=82,
-        title={'text': "AI Classifying...", 'font': {'color': '#00C9B1', 'size': 14}},
-        gauge={
-            'axis': {'range': [0, 100], 'tickcolor': '#1E3A4A'},
-            'bar': {'color': '#00C9B1', 'thickness': 0.3},
-            'bgcolor': '#0D1B2A',
-            'bordercolor': '#1E3A4A',
-            'steps': [
-                {'range': [0, 40], 'color': '#0D2030'},
-                {'range': [40, 75], 'color': '#0D2A3A'},
-                {'range': [75, 100], 'color': '#003D35'},
-            ],
-        },
-        number={'font': {'color': '#00C9B1', 'size': 20}, 'suffix': '%'}
-    ))
-    fig.update_layout(
-        paper_bgcolor='rgba(0,0,0,0)',
-        font=dict(color='#D4EBF8'),
-        height=180,
-        margin=dict(l=20, r=20, t=30, b=10),
-    )
-    placeholder.plotly_chart(fig, use_container_width=True)
