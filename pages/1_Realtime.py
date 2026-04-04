@@ -242,7 +242,7 @@ if 'ack' in query_params:
             st.error("❌ Failed to save acknowledgment.")
     st.stop()
 
-if not st.session_state.get('authenticated', False) and 'ack' not in st.query_params:
+if not st.session_state.get('authenticated', False):
     st.switch_page('pages/login.py')
 
 if not st.session_state.get('session_initialized', False):
@@ -403,7 +403,7 @@ def send_email_notification(recipient_email, recipient_name, alarm_type, turbine
         msg['From']    = sender_email
         msg['To']      = recipient_email
         msg['Subject'] = f"🚨 {severity} ALARM: {alarm_type} - Turbine {turbine_id}"
-        ack_url = f"https://windsense-ai.streamlit.app/?ack={alarm_id}&channel=email"
+        ack_url = f"https://windsense-ai.streamlit.app/Realtime?ack={alarm_id}&channel=email"
         body = f"""
         <html><body style="font-family: Arial, sans-serif;">
             <div style="background: linear-gradient(135deg, #0D1B2A 0%, #1E3A5F 100%); padding: 20px; color: white;">
@@ -462,7 +462,7 @@ def send_sms_notification(phone_number, recipient_name, alarm_type, turbine_id, 
     try:
         from utils.sms_sender import send_real_sms
 
-        ack_url = f"https://windsense-ai.streamlit.app/?ack={alarm_id}&channel=whatsapp"
+        ack_url = f"https://windsense-ai.streamlit.app/Realtime?ack={alarm_id}&channel=whatsapp"
         message_body = (
             f"WINDSENSE AI ALERT\n"
             f"Severity: {severity}\n"
@@ -884,7 +884,7 @@ with st.sidebar:
             st.image("assets/wind_turbine_fallback.png", width=80)
         except Exception:
 
-            st.markdown("<span style='font-size:1.5rem; color:#00C9B1;'>≪ 🌀</span>", unsafe_allow_html=True)
+            st.markdown("## 🌀", unsafe_allow_html=True)
 
     st.markdown("<h2 style='color:#00C9B1; margin:0; font-size:1.3rem;'>WindSense AI</h2>", unsafe_allow_html=True)
     st.caption("Team TG0907494 | TECHgium 9th Edition")
