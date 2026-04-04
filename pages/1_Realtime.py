@@ -242,7 +242,7 @@ if 'ack' in query_params:
             st.error("❌ Failed to save acknowledgment.")
     st.stop()
 
-if not st.session_state.get('authenticated', False):
+if not st.session_state.get('authenticated', False) and 'ack' not in st.query_params:
     st.switch_page('pages/login.py')
 
 if not st.session_state.get('session_initialized', False):
