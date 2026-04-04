@@ -53,6 +53,11 @@ st.markdown("""
 <style>
     .stApp { background-color: #0D1B2A; color: white; }
     .main .block-container { background-color: #0D1B2A; }
+    [data-testid="stSidebar"] {
+        background-color: #0D1B2A !important;
+        border-right: 1px solid #00C9B1 !important;
+    }
+    [data-testid="stSidebar"] * { color: #4FC3F7 !important; }
     [data-testid="stForm"] {
         background: linear-gradient(135deg, #1a2a3a 0%, #0D1B2A 100%);
         border: 1px solid #00C9B1;
