@@ -455,20 +455,38 @@ code {
 ::-webkit-scrollbar-thumb:hover { background: var(--accent-blue); }
 ::-webkit-scrollbar-track { background: var(--bg-deep); }
 
-/* ── Sidebar collapse button fix ── */
+/* ── Sidebar collapse button >> << ── */
 [data-testid="stIconMaterial"] {
     display: none !important;
+}
+
+[data-testid="collapsedControl"] button,
+[data-testid="stSidebarCollapseButton"] button {
+    background-color: transparent !important;
+    border: 1px solid #00C9B1 !important;
+    border-radius: 4px !important;
+    width: 28px !important;
+    height: 28px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
 }
 
 [data-testid="collapsedControl"] button::after {
     content: '>>' !important;
     color: #00C9B1 !important;
     font-weight: 700 !important;
-    font-size: 1rem !important;
+    font-size: 0.85rem !important;
     font-family: 'Rajdhani', sans-serif !important;
-    display: block !important;
 }
 
+[data-testid="stSidebarCollapseButton"] button::after {
+    content: '<<' !important;
+    color: #00C9B1 !important;
+    font-weight: 700 !important;
+    font-size: 0.85rem !important;
+    font-family: 'Rajdhani', sans-serif !important;
+}
 /* ── Markdown tables ── */
 table {
     background-color: var(--bg-secondary) !important;
