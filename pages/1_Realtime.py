@@ -195,7 +195,9 @@ def get_dashboard_url():
 
 DASHBOARD_URL = get_dashboard_url()
 
-# ── Acknowledgment via URL params ────────────────────────────────────────────
+# ── Auth guard ───────────────────────────────────────────────────────────────
+# ACK links must be checked BEFORE the auth guard so unauthenticated
+# users clicking email/WhatsApp links are not bounced to login.
 query_params = st.query_params
 
 if 'ack' in query_params:
@@ -240,7 +242,6 @@ if 'ack' in query_params:
             st.error("❌ Failed to save acknowledgment.")
     st.stop()
 
-# ── Auth guard ───────────────────────────────────────────────────────────────
 if not st.session_state.get('authenticated', False):
     st.switch_page('pages/login.py')
 
