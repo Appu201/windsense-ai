@@ -460,36 +460,30 @@ code {
     display: none !important;
 }
 
+[data-testid="stSidebarCollapseButton"] button,
 [data-testid="stExpandSidebarButton"] button {
     background-color: transparent !important;
     border: none !important;
     padding: 0 !important;
+    width: 24px !important;
+    height: 24px !important;
 }
 
+[data-testid="stSidebarCollapseButton"] button span,
 [data-testid="stExpandSidebarButton"] button span {
     display: none !important;
 }
 
-[data-testid="stExpandSidebarButton"] button::after {
-    content: '>>' !important;
+[data-testid="stSidebarCollapseButton"] button::after {
+    content: '<<' !important;
     color: #00C9B1 !important;
     font-weight: 700 !important;
     font-size: 0.9rem !important;
     font-family: 'Rajdhani', sans-serif !important;
 }
 
-[data-testid="stSidebarCollapseButton"] button {
-    background-color: transparent !important;
-    border: none !important;
-    padding: 0 !important;
-}
-
-[data-testid="stSidebarCollapseButton"] button span {
-    display: none !important;
-}
-
-[data-testid="stSidebarCollapseButton"] button::after {
-    content: '<<' !important;
+[data-testid="stExpandSidebarButton"] button::after {
+    content: '>>' !important;
     color: #00C9B1 !important;
     font-weight: 700 !important;
     font-size: 0.9rem !important;
