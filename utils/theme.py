@@ -463,10 +463,11 @@ code {
 [data-testid="collapsedControl"] button,
 [data-testid="stSidebarCollapseButton"] button {
     background-color: transparent !important;
-    border: 1px solid #00C9B1 !important;
+    border: none !important;
     border-radius: 4px !important;
-    width: 28px !important;
-    height: 28px !important;
+    width: 24px !important;
+    height: 24px !important;
+    padding: 0 !important;
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
@@ -476,16 +477,18 @@ code {
     content: '>>' !important;
     color: #00C9B1 !important;
     font-weight: 700 !important;
-    font-size: 0.85rem !important;
+    font-size: 0.9rem !important;
     font-family: 'Rajdhani', sans-serif !important;
+    line-height: 1 !important;
 }
 
 [data-testid="stSidebarCollapseButton"] button::after {
     content: '<<' !important;
     color: #00C9B1 !important;
     font-weight: 700 !important;
-    font-size: 0.85rem !important;
+    font-size: 0.9rem !important;
     font-family: 'Rajdhani', sans-serif !important;
+    line-height: 1 !important;
 }
 /* ── Markdown tables ── */
 table {
