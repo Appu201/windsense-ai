@@ -464,8 +464,10 @@ code {
     background-color: transparent !important;
     border: none !important;
     padding: 0 !important;
-    width: 24px !important;
-    height: 24px !important;
+}
+
+[data-testid="stExpandSidebarButton"] button span {
+    display: none !important;
 }
 
 [data-testid="stExpandSidebarButton"] button::after {
@@ -474,15 +476,16 @@ code {
     font-weight: 700 !important;
     font-size: 0.9rem !important;
     font-family: 'Rajdhani', sans-serif !important;
-    line-height: 1 !important;
 }
 
 [data-testid="stSidebarCollapseButton"] button {
     background-color: transparent !important;
     border: none !important;
     padding: 0 !important;
-    width: 24px !important;
-    height: 24px !important;
+}
+
+[data-testid="stSidebarCollapseButton"] button span {
+    display: none !important;
 }
 
 [data-testid="stSidebarCollapseButton"] button::after {
@@ -491,9 +494,7 @@ code {
     font-weight: 700 !important;
     font-size: 0.9rem !important;
     font-family: 'Rajdhani', sans-serif !important;
-    line-height: 1 !important;
 }
-
 /* ── Markdown tables ── */
 table {
     background-color: var(--bg-secondary) !important;
