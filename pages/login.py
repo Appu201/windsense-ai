@@ -42,20 +42,13 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-ack_id = st.query_params.get('ack', '')
-if ack_id:
-    st.session_state['pending_ack'] = ack_id
-
-if st.session_state.get('authenticated', False):
-    st.switch_page("pages/1_Realtime.py")
-
+# Hide sidebar completely
 st.markdown("""
 <style>
     [data-testid="stSidebarNav"] { display: none !important; }
     [data-testid="stSidebar"] { display: none !important; }
     [data-testid="collapsedControl"] { display: none !important; }
     section[data-testid="stSidebar"] { display: none !important; }
-    button[data-testid="baseButton-header"] { display: none !important; }
     header { display: none !important; }
     footer { display: none !important; }
 
@@ -79,8 +72,6 @@ st.markdown("""
         border-radius: 8px !important;
         color: #E8F4FD !important;
         caret-color: #00C9B1 !important;
-        outline: none !important;
-        box-shadow: none !important;
     }
 
     .stTextInput > div > div > input:focus {
@@ -89,34 +80,31 @@ st.markdown("""
     }
 
     div[data-baseweb] { border: none !important; box-shadow: none !important; }
-    div[data-baseweb] > div { border: none !important; box-shadow: none !important; }
 
     [data-testid="InputInstructions"] { display: none !important; }
-
-    .stButton > button {
-        background: linear-gradient(135deg, #004D40, #00796B);
-        color: white !important;
-        border: 1px solid #00C9B1 !important;
-        border-radius: 8px;
-        font-weight: 600;
-    }
-
-    .stButton > button:hover {
-        background: linear-gradient(135deg, #00796B, #00C9B1) !important;
-    }
 </style>
 """, unsafe_allow_html=True)
 
+# Handle acknowledgment link
+ack_id = st.query_params.get('ack', '')
+if ack_id:
+    st.session_state['pending_ack'] = ack_id
+
+# Redirect if already logged in
+if st.session_state.get('authenticated', False):
+    st.switch_page("pages/1_Realtime.py")
+
+# Logo
 try:
-    logo_bytes = open('assets/windsense_logo_full.png', 'rb').read()
     import base64
+    logo_bytes = open('assets/windsense_logo_full.png', 'rb').read()
     logo_b64 = base64.b64encode(logo_bytes).decode()
     st.markdown(f"""
     <div style='text-align:center; margin-bottom:1rem;'>
         <img src='data:image/png;base64,{logo_b64}' width='300'/>
     </div>
     """, unsafe_allow_html=True)
-except Exception:
+except:
     st.markdown("<h1 style='text-align:center; color:#00C9B1;'>🌀 WindSense AI</h1>", unsafe_allow_html=True)
 
 st.markdown("<p style='text-align:center; color:#4FC3F7;'>Team TG0907494 | TECHgium 9th Edition</p>", unsafe_allow_html=True)
@@ -124,14 +112,18 @@ st.markdown("<p style='text-align:center; color:#6B8FA8;'>Intelligent Alarm Clas
 
 st.divider()
 
+# Pending acknowledgment notice
 pending_ack = st.session_state.get('pending_ack', '')
 if pending_ack:
-    st.info(f"🔔 You're acknowledging alarm **{pending_ack}**. Please log in to continue.")
+    st.info(f"🔔 You're acknowledging alarm **{pending_ack}**. Please log in.")
 
+# Login form
 with st.form("login_form"):
     st.subheader("🔐 Sign In")
+
     username = st.text_input("Username")
     password = st.text_input("Password", type="password")
+
     submit = st.form_submit_button("🔓 Login", use_container_width=True)
 
     if submit:
@@ -143,6 +135,8 @@ with st.form("login_form"):
                 st.session_state.user_role = user_data['role']
                 st.session_state.user_email = user_data.get('email', '')
                 st.session_state.login_time = datetime.now().isoformat()
+                st.session_state.acknowledged_alarms = {}
+
                 st.success(f"✅ Welcome, {user_data['name']}!")
                 import time
                 time.sleep(1)
@@ -150,17 +144,76 @@ with st.form("login_form"):
             else:
                 st.error("❌ Invalid username or password.")
         else:
-            st.warning("⚠️ Please enter both username and password.")
+            st.warning("⚠️ Enter username and password.")
 
 st.divider()
 
+# ===== FORGOT PASSWORD =====
+with st.expander("🔑 Forgot Password?"):
+    st.write("Enter your registered email address.")
+
+    reset_email = st.text_input("Email Address", key="reset_email")
+
+    if st.button("📧 Send Reset Link"):
+        import smtplib
+        from email.mime.text import MIMEText
+        from email.mime.multipart import MIMEMultipart
+
+        known_emails = {
+            "windsenseada@gmail.com": "Wind Farm Admin",
+            "team@tg0907494.com": "Team TG0907494",
+            "demo@windsense.ai": "Demo User",
+            "ts.aparajithaa@gmail.com": "Aparajithaa"
+        }
+
+        if reset_email and reset_email.lower() in known_emails:
+            try:
+                sender = "windsenseada@gmail.com"
+                app_password = "oaru xyta qlwi hpmw"
+
+                msg = MIMEMultipart()
+                msg['From'] = sender
+                msg['To'] = reset_email
+                msg['Subject'] = "WindSense AI — Password Reset"
+
+                body = f"""
+                Dear {known_emails[reset_email.lower()]},
+
+                A password reset was requested.
+
+                Dashboard:
+                https://windsense-ai.streamlit.app
+
+                Contact admin for password reset.
+
+                WindSense AI Team
+                """
+
+                msg.attach(MIMEText(body, 'plain'))
+
+                server = smtplib.SMTP('smtp.gmail.com', 587)
+                server.starttls()
+                server.login(sender, app_password)
+                server.sendmail(sender, reset_email, msg.as_string())
+                server.quit()
+
+                st.success("✅ Email sent successfully!")
+
+            except Exception as e:
+                st.error(f"❌ Error: {e}")
+        else:
+            st.warning("⚠️ Email not found.")
+
+st.divider()
+
+# Demo credentials
 with st.expander("ℹ️ Demo Credentials"):
-    st.write("admin / windsense2026")
-    st.write("teamtg / TECHgium2026")
     st.write("demo / demo123")
+    st.write("teamtg / TECHgium2026")
+    st.write("admin / windsense2026")
 
 st.markdown("""
-<div style='text-align:center; color:#4FC3F7; padding:1rem 0; font-size:0.8rem;'>
+<div style='text-align:center; color:#4FC3F7; font-size:0.8rem;'>
 WindSense AI © 2026 | TECHgium 9th Edition
 </div>
 """, unsafe_allow_html=True)
