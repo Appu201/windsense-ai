@@ -456,13 +456,17 @@ code {
 ::-webkit-scrollbar-track { background: var(--bg-deep); }
 
 /* ── Sidebar collapse button fix ── */
-[data-testid="collapsedControl"] {
-    color: #00C9B1 !important;
+[data-testid="stIconMaterial"] {
+    display: none !important;
 }
+
 [data-testid="collapsedControl"] button::after {
     content: '>>' !important;
     color: #00C9B1 !important;
     font-weight: 700 !important;
+    font-size: 1rem !important;
+    font-family: 'Rajdhani', sans-serif !important;
+    display: block !important;
 }
 
 /* ── Markdown tables ── */
@@ -594,43 +598,47 @@ tr:hover td {
     text-transform: uppercase;
     font-family: 'JetBrains Mono', monospace;
 }
-/* Semi-3D card effect for alert boxes */
-    .alert-critical, .alert-high, .alert-medium {
-        position: relative;
-        transform: perspective(800px) rotateX(0deg);
-        transition: transform 0.2s ease, box-shadow 0.2s ease;
-    }
-    .alert-critical:hover {
-        transform: perspective(800px) rotateX(1deg) translateY(-1px);
-        box-shadow: 0 6px 20px rgba(255,68,68,0.35) !important;
-    }
-    .alert-high:hover {
-        transform: perspective(800px) rotateX(1deg) translateY(-1px);
-        box-shadow: 0 6px 20px rgba(255,136,0,0.35) !important;
-    }
-    .alert-medium:hover {
-        transform: perspective(800px) rotateX(1deg) translateY(-1px);
-        box-shadow: 0 6px 20px rgba(255,187,51,0.35) !important;
-    }
-    @keyframes shimmer {
-        0% { background-position: -1000px 0; }
-        100% { background-position: 1000px 0; }
-    }
-    .loading-shimmer {
-        background: linear-gradient(90deg, #0D1B2A 25%, #142333 50%, #0D1B2A 75%);
-        background-size: 1000px 100%;
-        animation: shimmer 2s infinite linear;
-        border-radius: 8px;
-        height: 20px;
-        margin: 4px 0;
-    }
-    @keyframes pulse-teal {
-        0%, 100% { box-shadow: 0 0 0 0 rgba(0,201,177,0.4); }
-        50% { box-shadow: 0 0 0 8px rgba(0,201,177,0); }
-    }
-    .pulse-active {
-        animation: pulse-teal 2s ease-in-out infinite;
-    }
+
+/* ── Semi-3D card hover effects ── */
+.alert-critical, .alert-high, .alert-medium {
+    position: relative;
+    transform: perspective(800px) rotateX(0deg);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.alert-critical:hover {
+    transform: perspective(800px) rotateX(1deg) translateY(-1px);
+    box-shadow: 0 6px 20px rgba(255,68,68,0.35) !important;
+}
+.alert-high:hover {
+    transform: perspective(800px) rotateX(1deg) translateY(-1px);
+    box-shadow: 0 6px 20px rgba(255,136,0,0.35) !important;
+}
+.alert-medium:hover {
+    transform: perspective(800px) rotateX(1deg) translateY(-1px);
+    box-shadow: 0 6px 20px rgba(255,187,51,0.35) !important;
+}
+
+/* ── Animations ── */
+@keyframes shimmer {
+    0% { background-position: -1000px 0; }
+    100% { background-position: 1000px 0; }
+}
+.loading-shimmer {
+    background: linear-gradient(90deg, #0D1B2A 25%, #142333 50%, #0D1B2A 75%);
+    background-size: 1000px 100%;
+    animation: shimmer 2s infinite linear;
+    border-radius: 8px;
+    height: 20px;
+    margin: 4px 0;
+}
+
+@keyframes pulse-teal {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(0,201,177,0.4); }
+    50% { box-shadow: 0 0 0 8px rgba(0,201,177,0); }
+}
+.pulse-active {
+    animation: pulse-teal 2s ease-in-out infinite;
+}
 
 </style>
 """
@@ -740,11 +748,12 @@ def status_card(label: str, value: str, status: str = "normal"):
     </div>
     """
     st.markdown(html, unsafe_allow_html=True)
+
+
 def render_classifying_spinner(placeholder):
     """
     Renders an animated teal gauge in the given st.empty() placeholder
     while classification is running. Call before model inference, clear after.
-    Tell Person A: from utils.theme import render_classifying_spinner
     """
     import plotly.graph_objects as go
     fig = go.Figure(go.Indicator(
