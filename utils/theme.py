@@ -120,17 +120,35 @@ DARK_CSS = """
 
 /* ── Metrics ── */
 [data-testid="stMetric"] {
-    background: linear-gradient(135deg, #0f2035 0%, #112233 100%);
-    border: 1px solid var(--border-dim);
-    border-top: 2px solid var(--accent-teal);
-    border-radius: 8px;
-    padding: 0.75rem 1rem;
-    transition: border-color 0.2s, box-shadow 0.2s;
+    background: linear-gradient(145deg, #0D1B2A 0%, #142333 60%, #1A2D3F 100%);
+    border: 1px solid #1E3A4A;
+    border-radius: 14px;
+    padding: 1rem 1.2rem;
+    box-shadow:
+        0 2px 4px rgba(0,0,0,0.4),
+        0 8px 24px rgba(0,0,0,0.3),
+        inset 0 1px 0 rgba(0,201,177,0.08);
+    transition: all 0.25s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+[data-testid="stMetric"]::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, #00C9B1, transparent);
+    opacity: 0.6;
 }
 
 [data-testid="stMetric"]:hover {
-    border-color: var(--accent-teal);
-    box-shadow: 0 0 12px rgba(0, 201, 177, 0.12);
+    border-color: #00C9B1;
+    box-shadow:
+        0 4px 8px rgba(0,0,0,0.5),
+        0 12px 32px rgba(0,201,177,0.15),
+        inset 0 1px 0 rgba(0,201,177,0.15);
+    transform: translateY(-2px);
 }
 
 [data-testid="stMetricValue"] {
@@ -546,6 +564,43 @@ tr:hover td {
     text-transform: uppercase;
     font-family: 'JetBrains Mono', monospace;
 }
+/* Semi-3D card effect for alert boxes */
+    .alert-critical, .alert-high, .alert-medium {
+        position: relative;
+        transform: perspective(800px) rotateX(0deg);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .alert-critical:hover {
+        transform: perspective(800px) rotateX(1deg) translateY(-1px);
+        box-shadow: 0 6px 20px rgba(255,68,68,0.35) !important;
+    }
+    .alert-high:hover {
+        transform: perspective(800px) rotateX(1deg) translateY(-1px);
+        box-shadow: 0 6px 20px rgba(255,136,0,0.35) !important;
+    }
+    .alert-medium:hover {
+        transform: perspective(800px) rotateX(1deg) translateY(-1px);
+        box-shadow: 0 6px 20px rgba(255,187,51,0.35) !important;
+    }
+    @keyframes shimmer {
+        0% { background-position: -1000px 0; }
+        100% { background-position: 1000px 0; }
+    }
+    .loading-shimmer {
+        background: linear-gradient(90deg, #0D1B2A 25%, #142333 50%, #0D1B2A 75%);
+        background-size: 1000px 100%;
+        animation: shimmer 2s infinite linear;
+        border-radius: 8px;
+        height: 20px;
+        margin: 4px 0;
+    }
+    @keyframes pulse-teal {
+        0%, 100% { box-shadow: 0 0 0 0 rgba(0,201,177,0.4); }
+        50% { box-shadow: 0 0 0 8px rgba(0,201,177,0); }
+    }
+    .pulse-active {
+        animation: pulse-teal 2s ease-in-out infinite;
+    }
 
 </style>
 """
@@ -655,3 +710,34 @@ def status_card(label: str, value: str, status: str = "normal"):
     </div>
     """
     st.markdown(html, unsafe_allow_html=True)
+def render_classifying_spinner(placeholder):
+    """
+    Renders an animated teal gauge in the given st.empty() placeholder
+    while classification is running. Call before model inference, clear after.
+    Tell Person A: from utils.theme import render_classifying_spinner
+    """
+    import plotly.graph_objects as go
+    fig = go.Figure(go.Indicator(
+        mode="gauge+number",
+        value=82,
+        title={'text': "AI Classifying...", 'font': {'color': '#00C9B1', 'size': 14}},
+        gauge={
+            'axis': {'range': [0, 100], 'tickcolor': '#1E3A4A'},
+            'bar': {'color': '#00C9B1', 'thickness': 0.3},
+            'bgcolor': '#0D1B2A',
+            'bordercolor': '#1E3A4A',
+            'steps': [
+                {'range': [0, 40], 'color': '#0D2030'},
+                {'range': [40, 75], 'color': '#0D2A3A'},
+                {'range': [75, 100], 'color': '#003D35'},
+            ],
+        },
+        number={'font': {'color': '#00C9B1', 'size': 20}, 'suffix': '%'}
+    ))
+    fig.update_layout(
+        paper_bgcolor='rgba(0,0,0,0)',
+        font=dict(color='#D4EBF8'),
+        height=180,
+        margin=dict(l=20, r=20, t=30, b=10),
+    )
+    placeholder.plotly_chart(fig, use_container_width=True)

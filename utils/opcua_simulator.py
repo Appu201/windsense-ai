@@ -269,3 +269,84 @@ class OPCUASimulator:
                 next((r['value'] for r in readings if 'Frequency' in r['description']), 50.0), 4
             )
         }
+
+# ── NEW: Functional approach (Person B — Phase 3 clean version) ──
+
+TURBINES = [
+    {'id': 10, 'label': 'Turbine 10', 'location': 'North Array'},
+    {'id': 11, 'label': 'Turbine 11', 'location': 'North Array'},
+    {'id': 13, 'label': 'Turbine 13', 'location': 'South Array'},
+    {'id': 21, 'label': 'Turbine 21', 'location': 'South Array'},
+]
+
+GRID_FREQUENCY_BASE = 50.0
+
+def _normal_val(base, pct_noise=0.03):
+    return round(base * (1 + random.uniform(-pct_noise, pct_noise)), 4)
+
+def _temp_val(base, pct_noise=0.05):
+    return round(base * (1 + random.uniform(-pct_noise, pct_noise)), 2)
+
+def get_fleet_summary(readings):
+    total_power = sum(r['power_kw'] for r in readings if r['status'] == 'NORMAL')
+    turbines_normal = sum(1 for r in readings if r['status'] == 'NORMAL')
+    turbines_alarm = sum(1 for r in readings if r['status'] in ('ALARM', 'ANOMALY DETECTED'))
+    grid_freq = _normal_val(GRID_FREQUENCY_BASE, 0.005)
+    return {
+        'total_fleet_power_kw': round(total_power, 1),
+        'turbines_normal': turbines_normal,
+        'turbines_alarm': turbines_alarm,
+        'grid_frequency_hz': grid_freq
+    }
+
+def generate_opcua_readings(inject_anomaly=False):
+    readings = []
+    timestamp = datetime.now().isoformat()
+    anomaly_turbine_idx = random.randint(0, len(TURBINES) - 1) if inject_anomaly else None
+    for i, turbine in enumerate(TURBINES):
+        is_anomaly_turbine = (i == anomaly_turbine_idx)
+        gearbox_temp = _temp_val(55, 0.08)
+        generator_temp = _temp_val(62, 0.07)
+        hydraulic_temp = _temp_val(44, 0.06)
+        power_kw = round(random.uniform(1200, 1800), 1)
+        wind_speed = round(random.uniform(7, 14), 2)
+        status = 'NORMAL'
+        anomaly_node = None
+        anomaly_score = 0.0
+        if is_anomaly_turbine:
+            anomaly_type = random.choice(['gearbox_temp', 'hydraulic_temp', 'generator_temp'])
+            if anomaly_type == 'gearbox_temp':
+                gearbox_temp = round(random.uniform(82, 95), 2)
+                anomaly_node = 'GearboxTemp'
+            elif anomaly_type == 'hydraulic_temp':
+                hydraulic_temp = round(random.uniform(78, 90), 2)
+                anomaly_node = 'HydraulicTemp'
+            else:
+                generator_temp = round(random.uniform(85, 98), 2)
+                anomaly_node = 'GeneratorTemp'
+            anomaly_score = round(random.uniform(0.72, 0.95), 3)
+            status = 'ANOMALY DETECTED'
+        is_alarm = (not is_anomaly_turbine) and (random.random() < 0.15)
+        if is_alarm:
+            power_kw = round(random.uniform(0, 200), 1)
+            status = 'ALARM'
+        readings.append({
+            'turbine_id': turbine['id'],
+            'turbine_label': turbine['label'],
+            'location': turbine['location'],
+            'gearbox_temp_c': gearbox_temp,
+            'generator_temp_c': generator_temp,
+            'hydraulic_temp_c': hydraulic_temp,
+            'power_kw': power_kw,
+            'wind_speed_ms': wind_speed,
+            'status': status,
+            'anomaly_node': anomaly_node,
+            'anomaly_score': anomaly_score,
+            'is_anomaly': is_anomaly_turbine,
+            'alarm_active': is_alarm or is_anomaly_turbine,
+            'timestamp': timestamp
+        })
+    return readings
+
+def should_inject_anomaly():
+    return random.randint(1, 10) == 1
