@@ -455,6 +455,21 @@ code {
 ::-webkit-scrollbar-thumb:hover { background: var(--accent-blue); }
 ::-webkit-scrollbar-track { background: var(--bg-deep); }
 
+/* ── Sidebar collapse button fix ── */
+[data-testid="collapsedControl"] button::before,
+[data-testid="stSidebarCollapsedControl"] button::before {
+    content: '>>' !important;
+    font-size: 1rem !important;
+    color: #00C9B1 !important;
+    font-family: 'Rajdhani', sans-serif !important;
+    font-weight: 700 !important;
+}
+[data-testid="collapsedControl"] button span,
+[data-testid="stSidebarCollapsedControl"] button span,
+button[kind="header"] span {
+    display: none !important;
+}
+
 /* ── Markdown tables ── */
 table {
     background-color: var(--bg-secondary) !important;

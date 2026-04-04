@@ -85,10 +85,64 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# Handle acknowledgment link
+# ── Process ACK links WITHOUT requiring login ────────────────────
+import json, os
+from datetime import datetime
+
+ACK_FILE = os.path.join(os.path.dirname(os.path.abspath('app.py')), 'data', 'acknowledgments.json')
+
+def _load_acks():
+    if os.path.exists(ACK_FILE):
+        try:
+            with open(ACK_FILE, 'r') as f:
+                return json.load(f)
+        except Exception:
+            return {}
+    return {}
+
+def _save_ack(alarm_id, ack_data):
+    try:
+        acks = _load_acks()
+        acks[alarm_id] = ack_data
+        with open(ACK_FILE, 'w') as f:
+            json.dump(acks, f, indent=2)
+        return True
+    except Exception:
+        return False
+
 ack_id = st.query_params.get('ack', '')
+channel = st.query_params.get('channel', 'email')
+
 if ack_id:
-    st.session_state['pending_ack'] = ack_id
+    existing = _load_acks()
+    if ack_id in existing:
+        prev = existing[ack_id]
+        st.markdown(f"""
+        <div style="text-align:center; padding:50px;">
+            <h1 style="color:#FF8800;">⚠️ Already Acknowledged</h1>
+            <p style="font-size:1.5rem;">Alarm <strong>{ack_id}</strong> was already acknowledged.</p>
+            <p style="color:#aaa;">At: {prev.get('time', prev.get('ack_time', 'Unknown'))}</p>
+        </div>
+        """, unsafe_allow_html=True)
+    else:
+        ack_data = {
+            'time':     datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+            'method':   f'{channel}_link',
+            'channel':  channel,
+            'alarm_id': ack_id
+        }
+        if _save_ack(ack_id, ack_data):
+            st.markdown(f"""
+            <div style="text-align:center; padding:50px;">
+                <h1 style="color:#4CAF50;">✅ Acknowledged!</h1>
+                <p style="font-size:1.5rem;">Alarm <strong>{ack_id}</strong> has been acknowledged.</p>
+                <p style="color:#aaa;">At: {ack_data['time']}</p>
+            </div>
+            """, unsafe_allow_html=True)
+            st.balloons()
+        else:
+            st.error("❌ Failed to save acknowledgment.")
+    st.stop()
 
 # Redirect if already logged in
 if st.session_state.get('authenticated', False):

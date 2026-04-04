@@ -403,8 +403,7 @@ def send_email_notification(recipient_email, recipient_name, alarm_type, turbine
         msg['From']    = sender_email
         msg['To']      = recipient_email
         msg['Subject'] = f"🚨 {severity} ALARM: {alarm_type} - Turbine {turbine_id}"
-        # FIX 1: ACK URL — no /Realtime path
-        ack_url = f"https://windsense-ai.streamlit.app/?ack={alarm_id}&channel=email"
+        aack_url = f"https://windsense-ai.streamlit.app/?ack={alarm_id}&channel=email"
         body = f"""
         <html><body style="font-family: Arial, sans-serif;">
             <div style="background: linear-gradient(135deg, #0D1B2A 0%, #1E3A5F 100%); padding: 20px; color: white;">
@@ -462,7 +461,7 @@ def send_email_notification(recipient_email, recipient_name, alarm_type, turbine
 def send_sms_notification(phone_number, recipient_name, alarm_type, turbine_id, severity, alarm_id):
     try:
         from utils.sms_sender import send_real_sms
-        # FIX 1: ACK URL — no /Realtime path
+
         ack_url = f"https://windsense-ai.streamlit.app/?ack={alarm_id}&channel=whatsapp"
         message_body = (
             f"WINDSENSE AI ALERT\n"
@@ -884,7 +883,7 @@ with st.sidebar:
         try:
             st.image("assets/wind_turbine_fallback.png", width=80)
         except Exception:
-            # FIX 3: Sidebar arrow — replaced broken Material Icon with plain unicode
+
             st.markdown("<span style='font-size:1.5rem; color:#00C9B1;'>≪ 🌀</span>", unsafe_allow_html=True)
 
     st.markdown("<h2 style='color:#00C9B1; margin:0; font-size:1.3rem;'>WindSense AI</h2>", unsafe_allow_html=True)
@@ -1012,7 +1011,7 @@ with tab1:
 
         def _fire_test_alarm(alarm_type):
             alarm_id  = f"TEST-{_random.randint(1000, 9999)}"
-            # FIX 2: Use real turbine IDs
+
             turbine   = _random.choice([10, 11, 13, 21])
             timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             alarm = {
