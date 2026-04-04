@@ -403,7 +403,7 @@ def send_email_notification(recipient_email, recipient_name, alarm_type, turbine
         msg['From']    = sender_email
         msg['To']      = recipient_email
         msg['Subject'] = f"🚨 {severity} ALARM: {alarm_type} - Turbine {turbine_id}"
-        aack_url = f"https://windsense-ai.streamlit.app/?ack={alarm_id}&channel=email"
+        ack_url = f"https://windsense-ai.streamlit.app/?ack={alarm_id}&channel=email"
         body = f"""
         <html><body style="font-family: Arial, sans-serif;">
             <div style="background: linear-gradient(135deg, #0D1B2A 0%, #1E3A5F 100%); padding: 20px; color: white;">

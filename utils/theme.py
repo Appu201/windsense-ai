@@ -456,18 +456,20 @@ code {
 ::-webkit-scrollbar-track { background: var(--bg-deep); }
 
 /* ── Sidebar collapse button fix ── */
-[data-testid="collapsedControl"] button::before,
-[data-testid="stSidebarCollapsedControl"] button::before {
+[data-testid="collapsedControl"] button p,
+[data-testid="collapsedControl"] button span {
+    display: none !important;
+}
+[data-testid="collapsedControl"] button {
+    font-size: 0 !important;
+}
+[data-testid="collapsedControl"] button::after {
     content: '>>' !important;
     font-size: 1rem !important;
     color: #00C9B1 !important;
     font-family: 'Rajdhani', sans-serif !important;
     font-weight: 700 !important;
-}
-[data-testid="collapsedControl"] button span,
-[data-testid="stSidebarCollapsedControl"] button span,
-button[kind="header"] span {
-    display: none !important;
+    display: block !important;
 }
 
 /* ── Markdown tables ── */
