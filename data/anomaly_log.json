@@ -1,1 +1,29 @@
-[]
+[
+  {
+    "logged_at": "2026-03-31 18:20:38",
+    "alarm_id": "OPC-ns=2;s=WindFarm.Turbine11.HydraulicTemp-1774961438",
+    "asset_id": "OPC",
+    "anomaly_score": 0.775,
+    "sensor_values": {
+      "sensor_11_avg": 39.85,
+      "sensor_12_avg": 0.0,
+      "sensor_41_avg": 39.85,
+      "power_30_avg": 0.0,
+      "wind_speed_3_avg": 0.0
+    },
+    "predicted_type": "OPC UA Anomaly",
+    "status": "pending_review"
+  },
+  {
+    "logged_at": "2026-04-04 20:42:04",
+    "alarm_id": "OPC-ns=2;s=WindFarm.Turbine0.GearboxTemp-1775315524",
+    "turbine": "T-OPC",
+    "anomaly_score": 0.724,
+    "severity": "MEDIUM",
+    "anomalous_sensors": [
+      "Grid Power Output: 0.0 kW (CRITICALLY LOW)"
+    ],
+    "source": "alarm_stream",
+    "status": "pending_review"
+  }
+]
