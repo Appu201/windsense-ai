@@ -1983,8 +1983,8 @@ with tab7:
         stats = st.session_state.iso_detector.get_stats()
         col1, col2, col3 = st.columns(3)
         with col1: st.metric("Total Anomalies Logged", stats.get('total_anomalies_logged', 0))
-	with col2: st.metric("Pending Review",          stats.get('pending_review', 0))
-	with col3: st.metric("Marked as Known",         stats.get('marked_as_known', 0))
+        with col2: st.metric("Pending Review", stats.get('pending_review', 0))
+        with col3: st.metric("Marked as Known", stats.get('marked_as_known', 0))
 
         anomaly_log = st.session_state.iso_detector.load_anomaly_log()
         pending     = [e for e in anomaly_log if e.get('status') == 'pending_review']
