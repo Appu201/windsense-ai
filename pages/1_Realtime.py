@@ -1993,8 +1993,8 @@ with tab7:
             st.warning(f"⚠️ {len(pending)} anomalies need your review")
             for _aidx, entry in enumerate(pending[:5]):
                 with st.expander(
-                    f"⚠️ {entry['alarm_id']} | Asset: {entry['asset_id']} | "
-                    f"Score: {entry['anomaly_score']} | {entry['logged_at']}"
+                    f"⚠️ {entry.get('alarm_id', 'N/A')} | Asset: {entry.get('asset_id', 'N/A')} | "
+                    f"Score: {entry.get('anomaly_score', 'N/A')} | {entry.get('logged_at', 'N/A')}"
                 ):
                     st.write("**Sensor Snapshot:**")
                     for sensor, val in entry.get('sensor_values', {}).items():
