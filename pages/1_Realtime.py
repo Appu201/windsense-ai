@@ -125,6 +125,24 @@ st.markdown("""
         fill: #00C9B1 !important;
     }
 
+    /* ── Fix sidebar expander arrow corruption ── */
+    [data-testid="stSidebar"] .streamlit-expanderHeader svg {
+        display: none !important;
+    }
+    [data-testid="stSidebar"] [data-testid="stExpanderToggleIcon"] {
+        display: none !important;
+    }
+    /* ── Style sidebar expander headers ── */
+    [data-testid="stSidebar"] .streamlit-expanderHeader {
+        background-color: #112233 !important;
+        border: 1px solid #00C9B1 !important;
+        border-radius: 8px !important;
+    }
+    [data-testid="stSidebar"] .streamlit-expanderHeader p {
+        color: #00C9B1 !important;
+        font-weight: 700 !important;
+    }
+
     /* ── Tabs ── */
     .stTabs [data-baseweb="tab-list"] { gap: 1rem; background-color: #0D1B2A; }
     .stTabs [data-baseweb="tab"] {
