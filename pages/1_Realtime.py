@@ -28,49 +28,70 @@ st.set_page_config(
 from utils.theme import apply_dark_theme
 apply_dark_theme()
 
+# ── Sidebar toggle icon override ─────────────────────────────────────────────
+st.markdown("""
+<style>
+    /* Force sidebar toggle always visible */
+    [data-testid="collapsedControl"] {
+        display: flex !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        background: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+        position: fixed !important;
+        top: 0.75rem !important;
+        left: 0.75rem !important;
+        z-index: 9999 !important;
+    }
+    [data-testid="collapsedControl"] svg {
+        fill: #00C9B1 !important;
+        color: #00C9B1 !important;
+        width: 1.6rem !important;
+        height: 1.6rem !important;
+    }
+</style>
+<script>
+(function() {
+    function replaceSidebarIcon() {
+        const btn = document.querySelector('[data-testid="collapsedControl"]');
+        if (!btn) return;
+        const svg = btn.querySelector('svg');
+        if (svg) {
+            svg.innerHTML = `
+                <rect x="3" y="5" width="18" height="2" rx="1" fill="#00C9B1"/>
+                <rect x="3" y="11" width="18" height="2" rx="1" fill="#00C9B1"/>
+                <rect x="3" y="17" width="18" height="2" rx="1" fill="#00C9B1"/>
+            `;
+            svg.setAttribute('viewBox', '0 0 24 24');
+        }
+    }
+    setTimeout(replaceSidebarIcon, 800);
+    setTimeout(replaceSidebarIcon, 2000);
+})();
+</script>
+""", unsafe_allow_html=True)
+
 # ── Master CSS block ─────────────────────────────────────────────────────────
 st.markdown("""
 <style>
     /* ── Sidebar nav hidden ── */
     [data-testid="stSidebarNav"] { display: none !important; }
 
-    /* ── Sidebar collapse button — always visible, green, clean ── */
+    /* ── Sidebar toggle button — always visible, no box ── */
     [data-testid="collapsedControl"] {
         display: flex !important;
         visibility: visible !important;
         opacity: 1 !important;
-        background: #0D1B2A !important;
-        border: 1.5px solid #00C9B1 !important;
-        border-radius: 8px !important;
-        box-shadow: none !important;
-        width: 2.2rem !important;
-        height: 2.2rem !important;
-        align-items: center !important;
-        justify-content: center !important;
-        transition: background 0.2s ease !important;
-    }
-    [data-testid="collapsedControl"]:hover {
-        background: #003D35 !important;
-    }
-    /* Remove the default arrow SVG and replace with hamburger lines */
-    [data-testid="collapsedControl"] svg {
-        display: none !important;
-    }
-    [data-testid="collapsedControl"]::after {
-        content: '';
-        display: block;
-        width: 1.1rem;
-        height: 2px;
-        background: #00C9B1;
-        box-shadow: 0 5px 0 #00C9B1, 0 -5px 0 #00C9B1;
-        border-radius: 2px;
-    }
-
-    /* Also style the open-sidebar button inside the sidebar */
-    button[kind="header"] {
         background: transparent !important;
         border: none !important;
         box-shadow: none !important;
+    }
+    [data-testid="collapsedControl"] svg {
+        fill: #00C9B1 !important;
+        color: #00C9B1 !important;
+        width: 1.4rem !important;
+        height: 1.4rem !important;
     }
 
     /* ── App background ── */
@@ -1020,9 +1041,7 @@ with st.sidebar:
         st.rerun()
 
     st.divider()
-    # Auto-train detector status only — no manual button
-    detector_status = "🟢 Detector: ACTIVE" if st.session_state.iso_detector.is_trained else "🔴 Detector: learning..."
-    st.caption(detector_status)
+    # Detector runs automatically — no status shown
 
     st.divider()
     # ── Help Center & Support ─────────────────────────────────────
@@ -2162,8 +2181,14 @@ with tab7:
                                 st.warning("⚠️ Please enter a name before adding.")
                     with col_b:
                         if st.button("✅ Mark as Known (no rename)", key=f"mark_known_{_aidx}"):
-                            st.session_state.iso_detector.mark_as_known(entry.get('alarm_id', 'UNKNOWN'))
-                            st.success("✅ Marked as known.")
+                            try:
+                                if hasattr(st.session_state.iso_detector, 'mark_as_known'):
+                                    st.session_state.iso_detector.mark_as_known(entry.get('alarm_id', 'UNKNOWN'))
+                                else:
+                                    mark_anomaly_reviewed(entry.get('alarm_id', 'UNKNOWN'), add_to_known=True)
+                            except Exception:
+                                mark_anomaly_reviewed(entry.get('alarm_id', 'UNKNOWN'), add_to_known=True)
+                            st.success("Marked as known.")
                             st.rerun()
         else:
             st.success("✅ No anomalies pending review")
