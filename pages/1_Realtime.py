@@ -125,25 +125,10 @@ st.markdown("""
         fill: #00C9B1 !important;
     }
 
-    /* Fix expander arrow icon text rendering */
+    /* Expander arrow color only — no shape overrides */
     [data-testid="stSidebar"] .streamlit-expanderHeader svg {
-        display: inline-block !important;
-        visibility: visible !important;
-        font-size: 0 !important;
-        width: 16px !important;
-        height: 16px !important;
-    }
-    [data-testid="stSidebar"] .streamlit-expanderHeader svg path {
-        d: path("M7 10l5 5 5-5z") !important;
         fill: #00C9B1 !important;
-    }
-    [data-testid="stSidebar"] details[open] .streamlit-expanderHeader svg path {
-        d: path("M7 14l5-5 5 5z") !important;
-    }
-    /* Hide the fallback text characters */
-    [data-testid="stSidebar"] .streamlit-expanderHeader span[data-testid="stExpanderToggleIcon"] {
-        font-size: 0 !important;
-        overflow: hidden !important;
+        color: #00C9B1 !important;
     }
 
     /* ── Tabs ── */
@@ -1308,21 +1293,12 @@ with tab1:
                 flagged_type = "Unknown Anomaly"
                 flag_status  = "🔴 Unknown / New Pattern"
                 anomaly_count += 1
-                # ── Write anomaly flag back to alarm_buffer so Tab 7 sees it ──
+                # Write anomaly flag back to alarm_buffer so Tab 7 sees it
                 for _buf in st.session_state.alarm_buffer:
                     if _buf.get('alarm_id') == row.get('alarm_id'):
                         _buf['is_anomaly']    = True
                         _buf['anomaly_score'] = float(_score)
                         break
-                try:
-                    save_anomaly_to_log(row.get('alarm_id', 'N/A'), dict(row), {'is_anomaly': True, 'anomaly_score': float(_score)})
-                except Exception:
-                    pass
-
-            if _is_anomaly:
-                flagged_type = "Unknown Anomaly"
-                flag_status  = "🔴 Unknown / New Pattern"
-                anomaly_count += 1
                 try:
                     save_anomaly_to_log(row.get('alarm_id', 'N/A'), dict(row), {'is_anomaly': True, 'anomaly_score': float(_score)})
                 except Exception:
