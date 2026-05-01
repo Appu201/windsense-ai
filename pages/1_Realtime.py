@@ -34,6 +34,45 @@ st.markdown("""
     /* ── Sidebar nav hidden ── */
     [data-testid="stSidebarNav"] { display: none !important; }
 
+    /* ── Sidebar collapse button — always visible, green, clean ── */
+    [data-testid="collapsedControl"] {
+        display: flex !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        background: #0D1B2A !important;
+        border: 1.5px solid #00C9B1 !important;
+        border-radius: 8px !important;
+        box-shadow: none !important;
+        width: 2.2rem !important;
+        height: 2.2rem !important;
+        align-items: center !important;
+        justify-content: center !important;
+        transition: background 0.2s ease !important;
+    }
+    [data-testid="collapsedControl"]:hover {
+        background: #003D35 !important;
+    }
+    /* Remove the default arrow SVG and replace with hamburger lines */
+    [data-testid="collapsedControl"] svg {
+        display: none !important;
+    }
+    [data-testid="collapsedControl"]::after {
+        content: '';
+        display: block;
+        width: 1.1rem;
+        height: 2px;
+        background: #00C9B1;
+        box-shadow: 0 5px 0 #00C9B1, 0 -5px 0 #00C9B1;
+        border-radius: 2px;
+    }
+
+    /* Also style the open-sidebar button inside the sidebar */
+    button[kind="header"] {
+        background: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+    }
+
     /* ── App background ── */
     .stApp { background-color: #0D1B2A; color: #E8F4FD; }
     .main .block-container { background-color: #0D1B2A; padding-top: 1rem; }
@@ -205,7 +244,10 @@ def format_alarm_id(alarm_id: str) -> str:
         import re
         s_part = re.sub(r'-\d{7,}$', '', s_part)
         return f"{ns_part} | {s_part}"
-    return raw
+        return raw
+
+# ── Helper: render a DataFrame as a visible HTML table ───────────────────────
+def render_table(df: pd.DataFrame, max_rows: int = 200) -> None:
     """Render df as a styled HTML table — always visible regardless of Streamlit theme."""
     if df is None or df.empty:
         st.info("No data to display.")
