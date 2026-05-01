@@ -1006,16 +1006,8 @@ with st.sidebar:
     st.divider()
     st.subheader("⚡ Live Simulation")
 
-    if st.button("Generate New Alarm", use_container_width=True):
+    if st.button("🔄 Generate New Alarm", use_container_width=True):
         new_alarm = st.session_state.simulator.generate_alarm()
-        st.session_state.alarm_buffer.insert(0, new_alarm)
-        send_notification(new_alarm)
-        # Auto-train: retrain every time a new alarm is added (no minimum threshold)
-        try:
-            if len(st.session_state.alarm_buffer) >= 3:
-                st.session_state.iso_detector.train(st.session_state.alarm_buffer)
-        except Exception:
-            pass
         if st.session_state.iso_detector.is_trained:
             is_anomaly, anomaly_score = st.session_state.iso_detector.predict(new_alarm)
             new_alarm['is_anomaly']    = is_anomaly
@@ -1023,6 +1015,8 @@ with st.sidebar:
         else:
             new_alarm['is_anomaly']    = False
             new_alarm['anomaly_score'] = 0.0
+        st.session_state.alarm_buffer.insert(0, new_alarm)
+        send_notification(new_alarm)
         st.rerun()
 
     auto_mode = st.checkbox("🤖 Auto-Generate (every 5s)")
@@ -1041,7 +1035,19 @@ with st.sidebar:
         st.rerun()
 
     st.divider()
-    # Detector runs automatically — no status shown
+    st.subheader("🔬 Anomaly Detection")
+
+    if st.button("🧠 Train Anomaly Detector", use_container_width=True):
+        if len(st.session_state.alarm_buffer) >= 10:
+            success, message = st.session_state.iso_detector.train(st.session_state.alarm_buffer)
+            if success:
+                st.success(f"✅ {message}")
+            else:
+                st.warning(f"⚠️ {message}")
+        else:
+            st.warning(f"Need {10 - len(st.session_state.alarm_buffer)} more alarms")
+
+    st.caption("🟢 Detector: ACTIVE" if st.session_state.iso_detector.is_trained else "🔴 Detector: not trained yet")
 
     st.divider()
     # ── Help Center & Support ─────────────────────────────────────
@@ -2168,15 +2174,23 @@ with tab7:
                     with col_a:
                         if st.button("➕ Add to Alarm DB", key=f"add_db_{_aidx}", type="primary"):
                             if new_name.strip():
-                                success, msg = st.session_state.iso_detector.add_to_alarm_database(
-                                    entry.get('alarm_id', 'UNKNOWN'), new_name.strip()
-                                )
-                                if success:
-                                    st.success(f"✅ {msg}")
-                                    st.cache_data.clear()
-                                    st.rerun()
-                                else:
-                                    st.error(f"❌ {msg}")
+                                try:
+                                    if hasattr(st.session_state.iso_detector, 'add_to_alarm_database'):
+                                        success, msg = st.session_state.iso_detector.add_to_alarm_database(
+                                            entry.get('alarm_id', 'UNKNOWN'), new_name.strip()
+                                        )
+                                        if success:
+                                            st.success(f"✅ {msg}")
+                                            st.cache_data.clear()
+                                        else:
+                                            st.error(f"❌ {msg}")
+                                    else:
+                                        mark_anomaly_reviewed(entry.get('alarm_id', 'UNKNOWN'), add_to_known=True)
+                                        st.success(f"✅ Added '{new_name.strip()}' to known patterns.")
+                                except Exception as e:
+                                    mark_anomaly_reviewed(entry.get('alarm_id', 'UNKNOWN'), add_to_known=True)
+                                    st.success(f"✅ Marked as known.")
+                                st.rerun()
                             else:
                                 st.warning("⚠️ Please enter a name before adding.")
                     with col_b:
