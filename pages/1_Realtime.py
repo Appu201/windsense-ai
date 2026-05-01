@@ -1066,6 +1066,7 @@ with st.sidebar:
     st.caption("🟢 Detector: ACTIVE" if st.session_state.iso_detector.is_trained else "🔴 Detector: not trained yet")
 
     st.divider()
+    st.divider()
     st.markdown("<p style='color:#00C9B1; font-weight:700; font-size:1rem;'>Help Center & Support</p>", unsafe_allow_html=True)
 
     st.markdown("""
