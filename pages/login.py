@@ -81,7 +81,50 @@ st.markdown("""
 
     div[data-baseweb] { border: none !important; box-shadow: none !important; }
 
-    [data-testid="InputInstructions"] { display: none !important; }
+    /* ── Animated particle background ── */
+    .stApp::before {
+        content: '';
+        position: fixed;
+        top: 0; left: 0;
+        width: 100%; height: 100%;
+        background:
+            radial-gradient(ellipse at 20% 50%, rgba(0,201,177,0.08) 0%, transparent 60%),
+            radial-gradient(ellipse at 80% 20%, rgba(79,195,247,0.06) 0%, transparent 50%),
+            radial-gradient(ellipse at 50% 80%, rgba(0,77,64,0.10) 0%, transparent 60%);
+        animation: bgPulse 8s ease-in-out infinite alternate;
+        pointer-events: none;
+        z-index: 0;
+    }
+    @keyframes bgPulse {
+        0%   { opacity: 0.6; transform: scale(1); }
+        100% { opacity: 1.0; transform: scale(1.04); }
+    }
+
+    /* ── Fix invisible white form buttons ── */
+    .stFormSubmitButton > button,
+    .stButton > button {
+        background: linear-gradient(135deg, #004D40, #00796B) !important;
+        color: #FFFFFF !important;
+        border: 1px solid #00C9B1 !important;
+        border-radius: 8px !important;
+        font-weight: 600 !important;
+        font-size: 1rem !important;
+        padding: 0.5rem 1rem !important;
+    }
+    .stFormSubmitButton > button:hover,
+    .stButton > button:hover {
+        background: linear-gradient(135deg, #00796B, #00C9B1) !important;
+        color: #0D1B2A !important;
+    }
+
+    /* ── Remove emoji clutter from expanders ── */
+    .streamlit-expanderHeader {
+        background-color: #1a2a3a !important;
+        color: #00C9B1 !important;
+        border: 1px solid #2a3a4a !important;
+        border-radius: 6px !important;
+        font-size: 0.95rem !important;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -173,12 +216,12 @@ if pending_ack:
 
 # Login form
 with st.form("login_form"):
-    st.subheader("🔐 Sign In")
+    st.subheader("Sign In")
 
     username = st.text_input("Username")
     password = st.text_input("Password", type="password")
 
-    submit = st.form_submit_button("🔓 Login", use_container_width=True)
+    submit = st.form_submit_button("Login", use_container_width=True)
 
     if submit:
         if username and password:
@@ -191,24 +234,24 @@ with st.form("login_form"):
                 st.session_state.login_time = datetime.now().isoformat()
                 st.session_state.acknowledged_alarms = {}
 
-                st.success(f"✅ Welcome, {user_data['name']}!")
+                st.success(f"Welcome, {user_data['name']}!")
                 import time
                 time.sleep(1)
                 st.switch_page("pages/1_Realtime.py")
             else:
-                st.error("❌ Invalid username or password.")
+                st.error("Invalid username or password.")
         else:
-            st.warning("⚠️ Enter username and password.")
+            st.warning("Enter username and password.")
 
 st.divider()
 
 # ===== FORGOT PASSWORD =====
-with st.expander("🔑 Forgot Password?"):
+with st.expander("Forgot Password?"):
     st.write("Enter your registered email address.")
 
     reset_email = st.text_input("Email Address", key="reset_email")
 
-    if st.button("📧 Send Reset Link"):
+    if st.button("Send Reset Link"):
         import smtplib
         from email.mime.text import MIMEText
         from email.mime.multipart import MIMEMultipart
@@ -256,12 +299,12 @@ with st.expander("🔑 Forgot Password?"):
             except Exception as e:
                 st.error(f"❌ Error: {e}")
         else:
-            st.warning("⚠️ Email not found.")
+            st.warning("Email not found.")
 
 st.divider()
 
 # Demo credentials
-with st.expander("ℹ️ Demo Credentials"):
+with st.expander("Demo Credentials"):
     st.write("demo / demo123")
     st.write("teamtg / TECHgium2026")
     st.write("admin / windsense2026")

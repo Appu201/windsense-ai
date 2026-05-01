@@ -186,8 +186,26 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# ── Helper: render a DataFrame as a visible HTML table ───────────────────────
-def render_table(df: pd.DataFrame, max_rows: int = 200) -> None:
+# ── Helper: parse and format OPC UA alarm IDs ────────────────────────────────
+def format_alarm_id(alarm_id: str) -> str:
+    """Convert OPC-ns=2;s=WindFarm.Turbine11.HydraulicTemp-1774961438
+       → ns=2 | WindFarm.Turbine11.HydraulicTemp"""
+    if not isinstance(alarm_id, str):
+        return str(alarm_id)
+    raw = alarm_id
+    if raw.startswith("OPC-"):
+        raw = raw[4:]  # strip 'OPC-'
+    if ";" in raw:
+        parts = raw.split(";", 1)
+        ns_part = parts[0]          # e.g. ns=2
+        s_part  = parts[1]          # e.g. s=WindFarm.Turbine11.HydraulicTemp-1774961438
+        if s_part.startswith("s="):
+            s_part = s_part[2:]     # strip 's='
+        # Remove trailing numeric ID (e.g. -1774961438)
+        import re
+        s_part = re.sub(r'-\d{7,}$', '', s_part)
+        return f"{ns_part} | {s_part}"
+    return raw
     """Render df as a styled HTML table — always visible regardless of Streamlit theme."""
     if df is None or df.empty:
         st.info("No data to display.")
@@ -925,8 +943,16 @@ with st.sidebar:
     st.divider()
     st.subheader("⚡ Live Simulation")
 
-    if st.button("🔄 Generate New Alarm", use_container_width=True):
+    if st.button("Generate New Alarm", use_container_width=True):
         new_alarm = st.session_state.simulator.generate_alarm()
+        st.session_state.alarm_buffer.insert(0, new_alarm)
+        send_notification(new_alarm)
+        # Auto-train: retrain every time a new alarm is added (no minimum threshold)
+        try:
+            if len(st.session_state.alarm_buffer) >= 3:
+                st.session_state.iso_detector.train(st.session_state.alarm_buffer)
+        except Exception:
+            pass
         if st.session_state.iso_detector.is_trained:
             is_anomaly, anomaly_score = st.session_state.iso_detector.predict(new_alarm)
             new_alarm['is_anomaly']    = is_anomaly
@@ -934,8 +960,6 @@ with st.sidebar:
         else:
             new_alarm['is_anomaly']    = False
             new_alarm['anomaly_score'] = 0.0
-        st.session_state.alarm_buffer.insert(0, new_alarm)
-        send_notification(new_alarm)
         st.rerun()
 
     auto_mode = st.checkbox("🤖 Auto-Generate (every 5s)")
@@ -954,24 +978,99 @@ with st.sidebar:
         st.rerun()
 
     st.divider()
-    st.subheader("🔬 Anomaly Detection")
-
-    if st.button("🧠 Train Anomaly Detector", use_container_width=True):
-        if len(st.session_state.alarm_buffer) >= 10:
-            success, message = st.session_state.iso_detector.train(st.session_state.alarm_buffer)
-            if success:
-                st.success(f"✅ {message}")
-            else:
-                st.warning(f"⚠️ {message}")
-        else:
-            st.warning(f"Need {10 - len(st.session_state.alarm_buffer)} more alarms")
-
-    st.caption("🟢 Detector: ACTIVE" if st.session_state.iso_detector.is_trained else "🔴 Detector: not trained yet")
+    # Auto-train detector status only — no manual button
+    detector_status = "🟢 Detector: ACTIVE" if st.session_state.iso_detector.is_trained else "🔴 Detector: learning..."
+    st.caption(detector_status)
 
     st.divider()
-    if st.button("🔁 Reconnect & Refresh", use_container_width=True):
-        flush_queue()
-        st.rerun()
+    # ── Help Center & Support ─────────────────────────────────────
+    st.divider()
+    st.markdown("<p style='color:#00C9B1; font-weight:700; font-size:1rem;'>Help Center & Support</p>", unsafe_allow_html=True)
+    with st.expander("FAQ — How to use this app"):
+        st.markdown("""
+**Tab 1 — Real-Time Monitoring**
+Generate alarms using the button above. Each alarm is classified automatically by the ML model.
+
+**Tab 2 — ML Model & Training**
+View model performance, accuracy, and the 19 alarm types the system can detect.
+
+**Tab 3 — Historical Analytics**
+Browse past alarm data, filter by turbine or type, and export reports.
+
+**Tab 4 — Notifications & Workflow**
+See and acknowledge active alarms. Use the acknowledge button to mark alarms as resolved.
+
+**Tab 5 — DMAIC Analysis**
+View structured corrective actions for each alarm type following the DMAIC methodology.
+
+**Tab 6 — Optimization**
+See system-level KPIs and optimization suggestions based on alarm patterns.
+
+**Tab 7 — Anomaly Review**
+When the system detects an unknown alarm pattern, it appears here. You can rename it and add it to the database, or dismiss it.
+
+**Tab 8 — OPC UA Live Feed**
+Live industrial sensor data from the OPC UA simulation layer.
+
+---
+**What does a red alarm mean?**
+Red = Critical priority. Needs immediate action.
+
+**What is an Unknown Anomaly?**
+A pattern the model has never seen before. Review in Tab 7, rename it, and add it to the database so future alarms are classified correctly.
+
+**How do I acknowledge an alarm?**
+Go to Tab 4, find the alarm, and click Acknowledge. Enter your name and action taken.
+
+**What is LPF?**
+Low Pass Filter — a signal processing technique used to smooth sensor readings and remove noise.
+
+**What does Turbine T-OPC mean?**
+A turbine monitored via OPC UA protocol. T-13, T-21 etc. are individual turbine unit numbers.
+        """)
+
+    with st.expander("Alarm Type Glossary"):
+        st.markdown("""
+- **Grid Voltage Fluctuation** — Unstable grid voltage supply
+- **Generator Bearing Overheating** — Bearing temp exceeds safe threshold
+- **Gearbox Oil Pressure Drop** — Low lubrication pressure in gearbox
+- **Pitch System Hydraulic Fault** — Blade pitch control failure
+- **Transformer Oil Temp High** — Overheating in transformer oil
+- **Yaw System Misalignment** — Turbine not facing into wind correctly
+- **Tower Vibration Alert** — Structural vibration exceeds safe level
+- **Unknown Anomaly** — New pattern not in training database; needs review
+        """)
+
+    with st.expander("Report an Issue"):
+        issue_text = st.text_area("Describe the issue:", key="help_issue_text", height=80)
+        if st.button("Send Report", key="help_send_issue"):
+            if issue_text.strip():
+                try:
+                    import smtplib
+                    from email.mime.text import MIMEText
+                    msg = MIMEText(f"Issue Report:\n\n{issue_text}")
+                    msg['Subject'] = "WindSense AI — Issue Report"
+                    msg['From'] = "windsenseada@gmail.com"
+                    msg['To'] = "windsenseada@gmail.com"
+                    s = smtplib.SMTP('smtp.gmail.com', 587)
+                    s.starttls()
+                    s.login("windsenseada@gmail.com", "oaru xyta qlwi hpmw")
+                    s.sendmail(msg['From'], [msg['To']], msg.as_string())
+                    s.quit()
+                    st.success("Report sent successfully.")
+                except Exception as e:
+                    st.error(f"Could not send: {e}")
+            else:
+                st.warning("Please describe the issue first.")
+
+    st.markdown("""
+<div style='margin-top:0.5rem; padding:0.75rem; background:#0D1B2A; border:1px solid #2a3a4a; border-radius:8px; font-size:0.8rem; color:#4FC3F7;'>
+<strong style='color:#00C9B1;'>Support</strong><br>
+📞 +91-8778838055<br>
+✉ windsenseada@gmail.com<br>
+<em>WindSense AI — Team TG0907494</em>
+</div>
+""", unsafe_allow_html=True)
 
 # ═══════════════════════════════════════════════════════════════════
 # MAIN TABS
@@ -1112,7 +1211,7 @@ with tab1:
                 pass
 
             if _is_anomaly:
-                flagged_type = "🔴 UNKNOWN ANOMALY — Isolation Forest Alert"
+                flagged_type = "Unknown Anomaly"
                 flag_status  = "🔴 Unknown / New Pattern"
                 anomaly_count += 1
                 try:
@@ -1144,7 +1243,7 @@ with tab1:
         render_table(display_df)   # ← HTML table, always visible
 
         if anomaly_count > 0:
-            st.error(f"🔴 {anomaly_count} UNKNOWN ANOMALY alarm(s) detected by Isolation Forest. Review in Tab 7.")
+            st.error(f"🔴 {anomaly_count} Unknown {'Anomaly' if anomaly_count == 1 else 'Anomalies'} detected. Review in Tab 7.")
         if uncertain_count > 0:
             st.warning(f"⚠️ {uncertain_count} alarm(s) flagged as uncertain (confidence <70%). These require manual inspection.")
 
@@ -1160,15 +1259,13 @@ with tab1:
             st.subheader("🔍 Anomaly Review Queue")
             st.info(f"{len(unreviewed)} anomalous alarm(s) detected. Review and decide whether to add to known patterns.")
             for i, anomaly in enumerate(unreviewed[:5]):
+                _fid = format_alarm_id(anomaly['alarm_id'])
                 with st.expander(
-                    f"🚨 {anomaly['alarm_id']} | "
-                    f"Turbine T-{anomaly.get('asset_id', anomaly.get('turbine', 'N/A'))} | "
-                    f"Score: {anomaly['anomaly_score']}",
+                    f"{_fid} | Turbine T-{anomaly.get('asset_id', anomaly.get('turbine', 'N/A'))} | Score:{anomaly['anomaly_score']}",
                     expanded=False
                 ):
                     st.write(f"**Type detected:** {anomaly.get('alarm_type', anomaly.get('predicted_type', 'N/A'))}")
                     st.write(f"**Time:** {anomaly.get('timestamp', anomaly.get('logged_at', 'N/A'))}")
-                    st.write(f"**Reason:** {anomaly.get('reason', 'Flagged by Isolation Forest')}")
                     col_yes, col_no = st.columns(2)
                     with col_yes:
                         if st.button("✅ Add to Known", key=f"t1_add_{i}_{anomaly['alarm_id']}"):
@@ -1992,9 +2089,9 @@ with tab7:
         if pending:
             st.warning(f"⚠️ {len(pending)} anomalies need your review")
             for _aidx, entry in enumerate(pending[:5]):
+                _fid2 = format_alarm_id(entry.get('alarm_id', 'N/A'))
                 with st.expander(
-                    f"⚠️ {entry.get('alarm_id', 'N/A')} | Asset: {entry.get('asset_id', 'N/A')} | "
-                    f"Score: {entry.get('anomaly_score', 'N/A')} | {entry.get('logged_at', 'N/A')}"
+                    f"{_fid2} | Turbine T-{entry.get('asset_id', 'N/A')} | Score: {entry.get('anomaly_score', 'N/A')} | {entry.get('logged_at', 'N/A')}"
                 ):
                     st.write("**Sensor Snapshot:**")
                     for sensor, val in entry.get('sensor_values', {}).items():
