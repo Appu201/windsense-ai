@@ -125,6 +125,27 @@ st.markdown("""
         fill: #00C9B1 !important;
     }
 
+    /* Fix expander arrow icon text rendering */
+    [data-testid="stSidebar"] .streamlit-expanderHeader svg {
+        display: inline-block !important;
+        visibility: visible !important;
+        font-size: 0 !important;
+        width: 16px !important;
+        height: 16px !important;
+    }
+    [data-testid="stSidebar"] .streamlit-expanderHeader svg path {
+        d: path("M7 10l5 5 5-5z") !important;
+        fill: #00C9B1 !important;
+    }
+    [data-testid="stSidebar"] details[open] .streamlit-expanderHeader svg path {
+        d: path("M7 14l5-5 5 5z") !important;
+    }
+    /* Hide the fallback text characters */
+    [data-testid="stSidebar"] .streamlit-expanderHeader span[data-testid="stExpanderToggleIcon"] {
+        font-size: 0 !important;
+        overflow: hidden !important;
+    }
+
     /* ── Tabs ── */
     .stTabs [data-baseweb="tab-list"] { gap: 1rem; background-color: #0D1B2A; }
     .stTabs [data-baseweb="tab"] {
@@ -1058,8 +1079,6 @@ with st.sidebar:
     st.caption("🟢 Detector: ACTIVE" if st.session_state.iso_detector.is_trained else "🔴 Detector: not trained yet")
 
     st.divider()
-    # ── Help Center & Support ─────────────────────────────────────
-    st.divider()
     st.markdown("<p style='color:#00C9B1; font-weight:700; font-size:1rem;'>Help Center & Support</p>", unsafe_allow_html=True)
     with st.expander("FAQ — How to use this app"):
         st.markdown("""
@@ -1289,6 +1308,21 @@ with tab1:
                 flagged_type = "Unknown Anomaly"
                 flag_status  = "🔴 Unknown / New Pattern"
                 anomaly_count += 1
+                # ── Write anomaly flag back to alarm_buffer so Tab 7 sees it ──
+                for _buf in st.session_state.alarm_buffer:
+                    if _buf.get('alarm_id') == row.get('alarm_id'):
+                        _buf['is_anomaly']    = True
+                        _buf['anomaly_score'] = float(_score)
+                        break
+                try:
+                    save_anomaly_to_log(row.get('alarm_id', 'N/A'), dict(row), {'is_anomaly': True, 'anomaly_score': float(_score)})
+                except Exception:
+                    pass
+
+            if _is_anomaly:
+                flagged_type = "Unknown Anomaly"
+                flag_status  = "🔴 Unknown / New Pattern"
+                anomaly_count += 1
                 try:
                     save_anomaly_to_log(row.get('alarm_id', 'N/A'), dict(row), {'is_anomaly': True, 'anomaly_score': float(_score)})
                 except Exception:
@@ -1324,36 +1358,6 @@ with tab1:
 
         csv = display_df.to_csv(index=False).encode('utf-8')
         st.download_button("📥 Download Alarm Log (CSV)", csv, "windsense_alarm_log.csv", "text/csv", use_container_width=True)
-
-        # ── Anomaly Learning Loop ────────────────────────────────────────────
-        anomaly_log = load_anomaly_log()
-        unreviewed  = [a for a in anomaly_log if not a.get('reviewed', False)]
-
-        if unreviewed:
-            st.divider()
-            st.subheader("🔍 Anomaly Review Queue")
-            st.info(f"{len(unreviewed)} anomalous alarm(s) detected. Review and decide whether to add to known patterns.")
-            for i, anomaly in enumerate(unreviewed[:5]):
-                _fid = format_alarm_id(anomaly['alarm_id'])
-                with st.expander(
-                    f"{_fid} | Turbine T-{anomaly.get('asset_id', anomaly.get('turbine', 'N/A'))} | Score:{anomaly['anomaly_score']}",
-                    expanded=False
-                ):
-                    st.write(f"**Type detected:** {anomaly.get('alarm_type', anomaly.get('predicted_type', 'N/A'))}")
-                    st.write(f"**Time:** {anomaly.get('timestamp', anomaly.get('logged_at', 'N/A'))}")
-                    col_yes, col_no = st.columns(2)
-                    with col_yes:
-                        if st.button("✅ Add to Known", key=f"t1_add_{i}_{anomaly['alarm_id']}"):
-                            mark_anomaly_reviewed(anomaly['alarm_id'], add_to_known=True)
-                            st.success("Added to known patterns!")
-                            st.rerun()
-                    with col_no:
-                        if st.button("❌ Dismiss", key=f"t1_dismiss_{i}_{anomaly['alarm_id']}"):
-                            mark_anomaly_reviewed(anomaly['alarm_id'], add_to_known=False)
-                            st.rerun()
-
-    else:
-        st.info("👈 Click 'Generate New Alarm' in the sidebar to start real-time monitoring")
 
     # ── Charts ───────────────────────────────────────────────────────────────
     if st.session_state.alarm_buffer:
