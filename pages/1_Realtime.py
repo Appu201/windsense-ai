@@ -125,14 +125,6 @@ st.markdown("""
         fill: #00C9B1 !important;
     }
 
-    /* Expander arrow — hide the corrupted SVG/text, let Streamlit render naturally */
-    [data-testid="stSidebar"] .streamlit-expanderHeader svg {
-        display: none !important;
-    }
-    [data-testid="stSidebar"] details summary p {
-        color: #00C9B1 !important;
-    }
-
     /* ── Tabs ── */
     .stTabs [data-baseweb="tab-list"] { gap: 1rem; background-color: #0D1B2A; }
     .stTabs [data-baseweb="tab"] {
@@ -1069,9 +1061,9 @@ with st.sidebar:
     st.divider()
     st.markdown("<p style='color:#00C9B1; font-weight:700; font-size:1rem;'>Help Center & Support</p>", unsafe_allow_html=True)
 
-    st.markdown("""
-<div style='background:#112233; border:1px solid #00C9B1; border-radius:8px; padding:0.8rem 1rem; margin-bottom:0.5rem; color:#E8F4FD; font-size:0.82rem;'>
-<strong style='color:#00C9B1;'>📖 FAQ</strong><br><br>
+    with st.expander("📖 FAQ"):
+        st.markdown("""
+<div style='color:#E8F4FD; font-size:0.82rem;'>
 <strong>Tab 1 — Real-Time Monitoring</strong><br>
 Generate alarms using the sidebar button. Each alarm is classified automatically by the ML model.<br><br>
 <strong>Tab 2 — ML Model & Training</strong><br>
@@ -1094,9 +1086,9 @@ Live industrial sensor data from the OPC UA simulation layer.<br><br>
 </div>
 """, unsafe_allow_html=True)
 
-    st.markdown("""
-<div style='background:#112233; border:1px solid #00C9B1; border-radius:8px; padding:0.8rem 1rem; margin-bottom:0.5rem; color:#E8F4FD; font-size:0.82rem;'>
-<strong style='color:#00C9B1;'>📚 Alarm Type Glossary</strong><br><br>
+    with st.expander("📚 Alarm Type Glossary"):
+        st.markdown("""
+<div style='color:#E8F4FD; font-size:0.82rem;'>
 - <strong>Grid Voltage Fluctuation</strong> — Unstable grid voltage supply<br>
 - <strong>Generator Bearing Overheating</strong> — Bearing temp exceeds safe threshold<br>
 - <strong>Gearbox Oil Pressure Drop</strong> — Low lubrication pressure in gearbox<br>
@@ -1108,19 +1100,10 @@ Live industrial sensor data from the OPC UA simulation layer.<br><br>
 </div>
 """, unsafe_allow_html=True)
 
-    st.markdown("""
-<div style='background:#112233; border:1px solid #00C9B1; border-radius:8px; padding:0.8rem 1rem; margin-bottom:0.5rem; color:#E8F4FD; font-size:0.82rem;'>
-<strong style='color:#00C9B1;'>🐛 Report an Issue</strong><br><br>
+    with st.expander("🐛 Report an Issue"):
+        st.markdown("""
+<div style='color:#E8F4FD; font-size:0.82rem;'>
 Email us directly at <strong>windsenseada@gmail.com</strong> or use the support contact below.
-</div>
-""", unsafe_allow_html=True)
-
-    st.markdown("""
-<div style='margin-top:0.5rem; padding:0.75rem; background:#0D1B2A; border:1px solid #2a3a4a; border-radius:8px; font-size:0.8rem; color:#4FC3F7;'>
-<strong style='color:#00C9B1;'>Support</strong><br>
-📞 +91-8778838055<br>
-✉ windsenseada@gmail.com<br>
-<em>WindSense AI — Team TG0907494</em>
 </div>
 """, unsafe_allow_html=True)
 
