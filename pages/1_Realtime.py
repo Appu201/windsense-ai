@@ -120,14 +120,16 @@ st.markdown("""
     [data-testid="stSidebar"] label,
     [data-testid="stSidebar"] div.stMarkdown { color: #E8F4FD !important; }
 
-    [data-testid="stSidebar"] svg {
+    [data-testid="stSidebar"] svg:not(.streamlit-expanderHeader svg) {
         color: #00C9B1 !important;
         fill: #00C9B1 !important;
     }
 
-    /* Expander arrow color only — no shape overrides */
+    /* Expander arrow — hide the corrupted SVG/text, let Streamlit render naturally */
     [data-testid="stSidebar"] .streamlit-expanderHeader svg {
-        fill: #00C9B1 !important;
+        display: none !important;
+    }
+    [data-testid="stSidebar"] details summary p {
         color: #00C9B1 !important;
     }
 
