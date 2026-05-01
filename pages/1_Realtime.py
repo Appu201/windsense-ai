@@ -120,27 +120,9 @@ st.markdown("""
     [data-testid="stSidebar"] label,
     [data-testid="stSidebar"] div.stMarkdown { color: #E8F4FD !important; }
 
-    /* Fix _arrow_right text — replace broken icon with CSS triangle */
-    [data-testid="stSidebar"] summary > div:first-child {
-        overflow: hidden !important;
-        width: 20px !important; height: 20px !important;
-        position: relative !important; flex-shrink: 0 !important;
-    }
-    [data-testid="stSidebar"] summary > div:first-child * {
-        font-size: 0 !important;
-        color: transparent !important;
-        fill: transparent !important;
-    }
-    [data-testid="stSidebar"] summary > div:first-child::after {
-        content: '▶';
-        font-size: 11px !important;
+    [data-testid="stSidebar"] svg {
         color: #00C9B1 !important;
-        position: absolute !important;
-        top: 50% !important; left: 50% !important;
-        transform: translate(-50%, -50%) !important;
-    }
-    [data-testid="stSidebar"] details[open] summary > div:first-child::after {
-        content: '▼' !important;
+        fill: #00C9B1 !important;
     }
 
     /* ── Tabs ── */
@@ -2167,26 +2149,26 @@ with tab7:
 
     # ── Anomaly Review Panel ─────────────────────────────────────────────────
     st.divider()
-# ── Anomaly Review Panel ─────────────────────────────────────────────────
-    st.divider()
     st.subheader("🔬 Anomaly Review Panel")
 
-    # Always use the imported load_anomaly_log — works regardless of iso_detector state
-    _all_anomalies  = load_anomaly_log()
-    _pending        = [e for e in _all_anomalies if not e.get('reviewed', False)]
-    _known          = [e for e in _all_anomalies if e.get('reviewed', False) and e.get('add_to_known', False)]
+    # Read directly from session buffer — always matches what was generated this session
+    _session_anomalies = [a for a in st.session_state.alarm_buffer if a.get('is_anomaly', False)]
+    _pending           = [a for a in _session_anomalies if not a.get('reviewed', False)]
+    _known             = [a for a in _session_anomalies if a.get('reviewed', False)]
 
     col1, col2, col3 = st.columns(3)
-    with col1: st.metric("Total Anomalies Logged", len(_all_anomalies))
-    with col2: st.metric("Pending Review",          len(_pending))
-    with col3: st.metric("Marked as Known",         len(_known))
+    with col1: st.metric("Total Unknown Anomalies", len(_session_anomalies))
+    with col2: st.metric("Pending Review",           len(_pending))
+    with col3: st.metric("Marked as Known",          len(_known))
 
     if not st.session_state.iso_detector.is_trained:
         st.info("Generate 10+ alarms then click 'Train Anomaly Detector' in the sidebar to start detecting unknown patterns.")
+    elif not _session_anomalies:
+        st.info("No unknown anomalies detected yet. Train the detector and generate more alarms.")
     elif not _pending:
-        st.success("✅ No anomalies pending review — all caught anomalies have been processed.")
+        st.success("✅ All anomalies have been reviewed.")
     else:
-        st.warning(f"⚠️ {len(_pending)} anomalies need your review")
+        st.warning(f"⚠️ {len(_pending)} anomaly/anomalies need your review")
         for _aidx, entry in enumerate(_pending[:5]):
             _fid2 = format_alarm_id(entry.get('alarm_id', 'N/A'))
             with st.expander(
@@ -2213,15 +2195,22 @@ with tab7:
                 with col_a:
                     if st.button("➕ Add to Alarm DB", key=f"add_db_{_aidx}", type="primary"):
                         if new_name.strip():
-                            mark_anomaly_reviewed(entry.get('alarm_id', 'UNKNOWN'), add_to_known=True)
-                            st.success(f"✅ '{new_name.strip()}' added to known alarm patterns. Counters will update on next interaction.")
+                            for buf_entry in st.session_state.alarm_buffer:
+                                if buf_entry.get('alarm_id') == entry.get('alarm_id'):
+                                    buf_entry['reviewed'] = True
+                                    buf_entry['alarm_type'] = new_name.strip()
+                                    break
+                            st.success(f"✅ '{new_name.strip()}' added to known patterns. Counters updated.")
                             st.rerun()
                         else:
-                            st.warning("Please enter a name before adding.")
+                            st.warning("Please enter a name first.")
                 with col_b:
                     if st.button("✅ Mark as Known", key=f"mark_known_{_aidx}"):
-                        mark_anomaly_reviewed(entry.get('alarm_id', 'UNKNOWN'), add_to_known=True)
-                        st.success("✅ Marked as known. This anomaly will no longer appear in the review queue.")
+                        for buf_entry in st.session_state.alarm_buffer:
+                            if buf_entry.get('alarm_id') == entry.get('alarm_id'):
+                                buf_entry['reviewed'] = True
+                                break
+                        st.success("✅ Marked as known. Removed from review queue.")
                         st.rerun()
 
 # ═══════════════════════════════════════════════════════════════════
