@@ -120,32 +120,6 @@ st.markdown("""
     [data-testid="stSidebar"] label,
     [data-testid="stSidebar"] div.stMarkdown { color: #E8F4FD !important; }
 
-    [data-testid="stSidebar"] svg {
-        color: #00C9B1 !important;
-        fill: #00C9B1 !important;
-    }
-
-    /* Fix expander arrow icon text rendering */
-    [data-testid="stSidebar"] .streamlit-expanderHeader svg {
-        display: inline-block !important;
-        visibility: visible !important;
-        font-size: 0 !important;
-        width: 16px !important;
-        height: 16px !important;
-    }
-    [data-testid="stSidebar"] .streamlit-expanderHeader svg path {
-        d: path("M7 10l5 5 5-5z") !important;
-        fill: #00C9B1 !important;
-    }
-    [data-testid="stSidebar"] details[open] .streamlit-expanderHeader svg path {
-        d: path("M7 14l5-5 5 5z") !important;
-    }
-    /* Hide the fallback text characters */
-    [data-testid="stSidebar"] .streamlit-expanderHeader span[data-testid="stExpanderToggleIcon"] {
-        font-size: 0 !important;
-        overflow: hidden !important;
-    }
-
     /* ── Tabs ── */
     .stTabs [data-baseweb="tab-list"] { gap: 1rem; background-color: #0D1B2A; }
     .stTabs [data-baseweb="tab"] {
