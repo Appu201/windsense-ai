@@ -1067,82 +1067,52 @@ with st.sidebar:
 
     st.divider()
     st.markdown("<p style='color:#00C9B1; font-weight:700; font-size:1rem;'>Help Center & Support</p>", unsafe_allow_html=True)
-    with st.expander("FAQ — How to use this app"):
-        st.markdown("""
-**Tab 1 — Real-Time Monitoring**
-Generate alarms using the button above. Each alarm is classified automatically by the ML model.
 
-**Tab 2 — ML Model & Training**
-View model performance, accuracy, and the 19 alarm types the system can detect.
+    st.markdown("""
+<div style='background:#112233; border:1px solid #00C9B1; border-radius:8px; padding:0.8rem 1rem; margin-bottom:0.5rem; color:#E8F4FD; font-size:0.82rem;'>
+<strong style='color:#00C9B1;'>📖 FAQ</strong><br><br>
+<strong>Tab 1 — Real-Time Monitoring</strong><br>
+Generate alarms using the sidebar button. Each alarm is classified automatically by the ML model.<br><br>
+<strong>Tab 2 — ML Model & Training</strong><br>
+View model performance, accuracy, and the 19 alarm types the system can detect.<br><br>
+<strong>Tab 3 — Historical Analytics</strong><br>
+Browse past alarm data, filter by turbine or type, and export reports.<br><br>
+<strong>Tab 4 — Notifications & Workflow</strong><br>
+See active alarms. Use the acknowledge button to mark alarms as resolved.<br><br>
+<strong>Tab 5 — DMAIC Analysis</strong><br>
+View structured corrective actions following the DMAIC methodology.<br><br>
+<strong>Tab 6 — Optimization</strong><br>
+See system-level KPIs and optimization suggestions based on alarm patterns.<br><br>
+<strong>Tab 7 — Anomaly Review</strong><br>
+Unknown alarm patterns appear here. Rename and add to database, or dismiss.<br><br>
+<strong>Tab 8 — OPC UA Live Feed</strong><br>
+Live industrial sensor data from the OPC UA simulation layer.<br><br>
+<strong>🔴 Red alarm?</strong> Critical priority — needs immediate action.<br>
+<strong>❓ Unknown Anomaly?</strong> New pattern — review in Tab 7.<br>
+<strong>✅ Acknowledge?</strong> Go to Tab 7, click Acknowledge, enter your name.
+</div>
+""", unsafe_allow_html=True)
 
-**Tab 3 — Historical Analytics**
-Browse past alarm data, filter by turbine or type, and export reports.
+    st.markdown("""
+<div style='background:#112233; border:1px solid #00C9B1; border-radius:8px; padding:0.8rem 1rem; margin-bottom:0.5rem; color:#E8F4FD; font-size:0.82rem;'>
+<strong style='color:#00C9B1;'>📚 Alarm Type Glossary</strong><br><br>
+- <strong>Grid Voltage Fluctuation</strong> — Unstable grid voltage supply<br>
+- <strong>Generator Bearing Overheating</strong> — Bearing temp exceeds safe threshold<br>
+- <strong>Gearbox Oil Pressure Drop</strong> — Low lubrication pressure in gearbox<br>
+- <strong>Pitch System Hydraulic Fault</strong> — Blade pitch control failure<br>
+- <strong>Transformer Oil Temp High</strong> — Overheating in transformer oil<br>
+- <strong>Yaw System Misalignment</strong> — Turbine not facing into wind correctly<br>
+- <strong>Tower Vibration Alert</strong> — Structural vibration exceeds safe level<br>
+- <strong>Unknown Anomaly</strong> — New pattern not in training database; needs review
+</div>
+""", unsafe_allow_html=True)
 
-**Tab 4 — Notifications & Workflow**
-See and acknowledge active alarms. Use the acknowledge button to mark alarms as resolved.
-
-**Tab 5 — DMAIC Analysis**
-View structured corrective actions for each alarm type following the DMAIC methodology.
-
-**Tab 6 — Optimization**
-See system-level KPIs and optimization suggestions based on alarm patterns.
-
-**Tab 7 — Anomaly Review**
-When the system detects an unknown alarm pattern, it appears here. You can rename it and add it to the database, or dismiss it.
-
-**Tab 8 — OPC UA Live Feed**
-Live industrial sensor data from the OPC UA simulation layer.
-
----
-**What does a red alarm mean?**
-Red = Critical priority. Needs immediate action.
-
-**What is an Unknown Anomaly?**
-A pattern the model has never seen before. Review in Tab 7, rename it, and add it to the database so future alarms are classified correctly.
-
-**How do I acknowledge an alarm?**
-Go to Tab 4, find the alarm, and click Acknowledge. Enter your name and action taken.
-
-**What is LPF?**
-Low Pass Filter — a signal processing technique used to smooth sensor readings and remove noise.
-
-**What does Turbine T-OPC mean?**
-A turbine monitored via OPC UA protocol. T-13, T-21 etc. are individual turbine unit numbers.
-        """)
-
-    with st.expander("Alarm Type Glossary"):
-        st.markdown("""
-- **Grid Voltage Fluctuation** — Unstable grid voltage supply
-- **Generator Bearing Overheating** — Bearing temp exceeds safe threshold
-- **Gearbox Oil Pressure Drop** — Low lubrication pressure in gearbox
-- **Pitch System Hydraulic Fault** — Blade pitch control failure
-- **Transformer Oil Temp High** — Overheating in transformer oil
-- **Yaw System Misalignment** — Turbine not facing into wind correctly
-- **Tower Vibration Alert** — Structural vibration exceeds safe level
-- **Unknown Anomaly** — New pattern not in training database; needs review
-        """)
-
-    with st.expander("Report an Issue"):
-        issue_text = st.text_area("Describe the issue:", key="help_issue_text", height=80)
-        if st.button("Send Report", key="help_send_issue"):
-            if issue_text.strip():
-                try:
-                    import smtplib
-                    from email.mime.text import MIMEText
-                    msg = MIMEText(f"Issue Report:\n\n{issue_text}")
-                    msg['Subject'] = "WindSense AI — Issue Report"
-                    msg['From'] = "windsenseada@gmail.com"
-                    msg['To'] = "windsenseada@gmail.com"
-                    s = smtplib.SMTP('smtp.gmail.com', 587)
-                    s.starttls()
-                    s.login("windsenseada@gmail.com", "oaru xyta qlwi hpmw")
-                    s.sendmail(msg['From'], [msg['To']], msg.as_string())
-                    s.quit()
-                    st.success("Report sent successfully.")
-                except Exception as e:
-                    st.error(f"Could not send: {e}")
-            else:
-                st.warning("Please describe the issue first.")
+    st.markdown("""
+<div style='background:#112233; border:1px solid #00C9B1; border-radius:8px; padding:0.8rem 1rem; margin-bottom:0.5rem; color:#E8F4FD; font-size:0.82rem;'>
+<strong style='color:#00C9B1;'>🐛 Report an Issue</strong><br><br>
+Email us directly at <strong>windsenseada@gmail.com</strong> or use the support contact below.
+</div>
+""", unsafe_allow_html=True)
 
     st.markdown("""
 <div style='margin-top:0.5rem; padding:0.75rem; background:#0D1B2A; border:1px solid #2a3a4a; border-radius:8px; font-size:0.8rem; color:#4FC3F7;'>
