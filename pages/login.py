@@ -16,7 +16,7 @@ DASHBOARD_URL   = "https://windsense-ai.streamlit.app"
 ACK_FILE        = os.path.join(os.path.dirname(os.path.abspath('app.py')), 'data', 'acknowledgments.json')
 USERS_FILE      = os.path.join(os.path.dirname(os.path.abspath('app.py')), 'data', 'registered_users.json')
 
-# ── Wind Farm Registry — 5 real farms with secret codes ──────────────────────
+# ── Wind Farm Registry ────────────────────────────────────────────────────────
 WIND_FARMS = {
     "GREENVALE WIND FARM": {
         "secret":      "GVW-2026-SECURE",
@@ -50,31 +50,31 @@ WIND_FARMS = {
     }
 }
 
-# ── Built-in admin accounts (always available) ───────────────────────────────
+# ── Built-in admin accounts ───────────────────────────────────────────────────
 BUILTIN_USERS = {
     "admin": {
         "password_hash": hashlib.sha256("windsense2026".encode()).hexdigest(),
-        "role":       "Admin",
-        "name":       "Wind Farm Admin",
-        "email":      "windsenseada@gmail.com",
-        "wind_farm":  "SYSTEM",
-        "builtin":    True
+        "role":      "Admin",
+        "name":      "Wind Farm Admin",
+        "email":     "windsenseada@gmail.com",
+        "wind_farm": "SYSTEM",
+        "builtin":   True
     },
     "teamtg": {
         "password_hash": hashlib.sha256("TECHgium2026".encode()).hexdigest(),
-        "role":       "Engineer",
-        "name":       "Team TG0907494",
-        "email":      "team@tg0907494.com",
-        "wind_farm":  "SYSTEM",
-        "builtin":    True
+        "role":      "Engineer",
+        "name":      "Team TG0907494",
+        "email":     "team@tg0907494.com",
+        "wind_farm": "SYSTEM",
+        "builtin":   True
     },
     "demo": {
         "password_hash": hashlib.sha256("demo123".encode()).hexdigest(),
-        "role":       "Viewer",
-        "name":       "Demo User",
-        "email":      "demo@windsense.ai",
-        "wind_farm":  "SYSTEM",
-        "builtin":    True
+        "role":      "Viewer",
+        "name":      "Demo User",
+        "email":     "demo@windsense.ai",
+        "wind_farm": "SYSTEM",
+        "builtin":   True
     }
 }
 
@@ -83,7 +83,6 @@ def hash_password(password: str) -> str:
     return hashlib.sha256(password.encode()).hexdigest()
 
 def load_registered_users() -> dict:
-    """Load dynamically registered users from JSON file."""
     if os.path.exists(USERS_FILE):
         try:
             with open(USERS_FILE, 'r') as f:
@@ -102,10 +101,9 @@ def save_registered_users(users: dict) -> bool:
         return False
 
 def get_all_users() -> dict:
-    """Merge built-in users + registered users. Registered users take NO priority over builtins."""
     merged = {}
     merged.update(load_registered_users())
-    merged.update(BUILTIN_USERS)   # builtins always win
+    merged.update(BUILTIN_USERS)
     return merged
 
 def verify_login(username: str, password: str):
@@ -118,18 +116,15 @@ def verify_login(username: str, password: str):
     return False, None
 
 def username_exists(username: str) -> bool:
-    username = username.lower().strip()
-    return username in get_all_users()
+    return username.lower().strip() in get_all_users()
 
 def email_registered(email: str) -> bool:
     email = email.lower().strip()
-    all_users = get_all_users()
-    return any(u.get("email", "").lower() == email for u in all_users.values())
+    return any(u.get("email", "").lower() == email for u in get_all_users().values())
 
 def get_user_by_email(email: str):
     email = email.lower().strip()
-    all_users = get_all_users()
-    for uname, udata in all_users.items():
+    for uname, udata in get_all_users().items():
         if udata.get("email", "").lower() == email:
             return uname, udata
     return None, None
@@ -185,7 +180,7 @@ def email_template(title: str, body_html: str) -> str:
     </body></html>
     """
 
-# ── Acknowledgment helpers (no login required) ────────────────────────────────
+# ── Acknowledgment helpers ────────────────────────────────────────────────────
 def _load_acks() -> dict:
     if os.path.exists(ACK_FILE):
         try:
@@ -217,12 +212,12 @@ st.set_page_config(
 
 st.markdown("""
 <style>
-    [data-testid="stSidebarNav"]    { display: none !important; }
-    [data-testid="stSidebar"]       { display: none !important; }
-    [data-testid="collapsedControl"]{ display: none !important; }
-    section[data-testid="stSidebar"]{ display: none !important; }
-    header  { display: none !important; }
-    footer  { display: none !important; }
+    [data-testid="stSidebarNav"]     { display: none !important; }
+    [data-testid="stSidebar"]        { display: none !important; }
+    [data-testid="collapsedControl"] { display: none !important; }
+    section[data-testid="stSidebar"] { display: none !important; }
+    header { display: none !important; }
+    footer { display: none !important; }
 
     .stApp { background-color: #0D1B2A; color: white; }
     .main .block-container { background-color: #0D1B2A; max-width: 560px; }
@@ -276,19 +271,24 @@ st.markdown("""
         color: #0D1B2A !important;
     }
 
-    /* Tab styling */
+    /* Tabs — full width equal split */
     .stTabs [data-baseweb="tab-list"] {
-        gap: 0.5rem;
+        display: flex !important;
+        width: 100% !important;
+        gap: 0 !important;
         background-color: #0D1B2A;
         border-bottom: 2px solid #00C9B1;
     }
     .stTabs [data-baseweb="tab"] {
+        flex: 1 !important;
+        justify-content: center !important;
+        text-align: center !important;
         height: 2.8rem;
         font-size: 0.95rem;
         font-weight: 700;
         color: #4FC3F7 !important;
         background-color: #1a2a3a;
-        border-radius: 8px 8px 0 0;
+        border-radius: 8px 8px 0 0 !important;
         padding: 0 1.5rem;
     }
     .stTabs [aria-selected="true"] {
@@ -327,7 +327,7 @@ st.markdown("""
         font-size: 0.9rem;
     }
 
-    /* Arrow-free expanders */
+    /* Arrow-free HTML details/summary */
     .ws-help-details {
         background-color: #112233;
         border: 1px solid #1E3A5F;
@@ -350,6 +350,20 @@ st.markdown("""
         color: #D0D8E0;
         font-size: 0.8rem;
         background-color: #0D1B2A;
+    }
+
+    /* Expander styling */
+    .streamlit-expanderHeader {
+        background-color: #1a2a3a !important;
+        color: #00C9B1 !important;
+        border: 1px solid #2a3a4a !important;
+        border-radius: 6px !important;
+        font-size: 0.95rem !important;
+    }
+    .streamlit-expanderContent {
+        background-color: #0D1B2A !important;
+        border: 1px solid #2a3a4a !important;
+        border-top: none !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -397,10 +411,13 @@ if ack_id:
 if st.session_state.get('authenticated', False):
     st.switch_page("pages/1_Realtime.py")
 
-# ── Session state defaults ─────────────────────────────────────────────────────
-for _key in ['signup_step', 'signup_farm_verified', 'signup_farm_name']:
-    if _key not in st.session_state:
-        st.session_state[_key] = 0 if _key == 'signup_step' else (False if _key == 'signup_farm_verified' else '')
+# ── Session state defaults ────────────────────────────────────────────────────
+if 'signup_step' not in st.session_state:
+    st.session_state.signup_step = 0
+if 'signup_farm_verified' not in st.session_state:
+    st.session_state.signup_farm_verified = False
+if 'signup_farm_name' not in st.session_state:
+    st.session_state.signup_farm_name = ''
 
 # ── Logo ──────────────────────────────────────────────────────────────────────
 try:
@@ -423,22 +440,7 @@ st.divider()
 # ═════════════════════════════════════════════════════════════════════════════
 # MAIN TABS — Sign In | Sign Up
 # ═════════════════════════════════════════════════════════════════════════════
-st.markdown("""
-    <style>
-    .stTabs [data-baseweb="tab-list"] {
-        display: flex !important;
-        width: 100% !important;
-        gap: 0 !important;
-    }
-    .stTabs [data-baseweb="tab"] {
-        flex: 1 !important;
-        justify-content: center !important;
-        text-align: center !important;
-        border-radius: 8px 8px 0 0 !important;
-    }
-    </style>
-    """, unsafe_allow_html=True)
-    tab_signin, tab_signup = st.tabs(["🔑  Sign In", "📋  Sign Up"])
+tab_signin, tab_signup = st.tabs(["🔑  Sign In", "📋  Sign Up"])
 
 # ─────────────────────────────────────────────────────────────────────────────
 # TAB 1 — SIGN IN
@@ -450,7 +452,6 @@ with tab_signin:
 
     with st.form("login_form"):
         st.markdown("<p style='color:#00C9B1; font-weight:700; font-size:1rem; margin-bottom:0.5rem;'>Sign In to WindSense AI</p>", unsafe_allow_html=True)
-
         username = st.text_input("Username", placeholder="Enter your username")
         password = st.text_input("Password", type="password", placeholder="Enter your password")
         submit   = st.form_submit_button("🔑 Login", use_container_width=True)
@@ -459,15 +460,16 @@ with tab_signin:
             if username and password:
                 success, user_data = verify_login(username, password)
                 if success:
-                    st.session_state.authenticated = True
-                    st.session_state.username      = user_data['name']
-                    st.session_state.user_role     = user_data['role']
-                    st.session_state.user_email    = user_data.get('email', '')
-                    st.session_state.user_farm     = user_data.get('wind_farm', 'SYSTEM')
-                    st.session_state.login_time    = datetime.now().isoformat()
+                    st.session_state.authenticated       = True
+                    st.session_state.username            = user_data['name']
+                    st.session_state.user_role           = user_data['role']
+                    st.session_state.user_email          = user_data.get('email', '')
+                    st.session_state.user_farm           = user_data.get('wind_farm', 'SYSTEM')
+                    st.session_state.login_time          = datetime.now().isoformat()
                     st.session_state.acknowledged_alarms = {}
                     st.success(f"✅ Welcome, {user_data['name']}!")
-                    import time; time.sleep(0.8)
+                    import time
+                    time.sleep(0.8)
                     st.switch_page("pages/1_Realtime.py")
                 else:
                     st.error("❌ Invalid username or password.")
@@ -481,7 +483,11 @@ with tab_signin:
         st.markdown("<p style='color:#00C9B1; font-weight:700;'>Reset Your Password</p>", unsafe_allow_html=True)
         st.markdown("<p style='color:#8899AA; font-size:0.82rem;'>Enter your registered email address. If found, a temporary password will be sent to you.</p>", unsafe_allow_html=True)
 
-        reset_email = st.text_input("Registered Email Address", key="reset_email_input", placeholder="you@example.com")
+        reset_email = st.text_input(
+            "Registered Email Address",
+            key="reset_email_input",
+            placeholder="you@example.com"
+        )
 
         if st.button("📧 Send Reset Email", key="btn_reset_pw", use_container_width=True):
             if not reset_email.strip():
@@ -492,7 +498,6 @@ with tab_signin:
                     st.error("❌ Email not found. Please check the address or sign up for a new account.")
                 else:
                     temp_pw = generate_temp_password(10)
-                    # Update password in registered users file (not for builtins)
                     reg_users = load_registered_users()
                     if _uname in reg_users:
                         reg_users[_uname]['password_hash'] = hash_password(temp_pw)
@@ -529,27 +534,27 @@ with tab_signin:
 
     # ── Demo credentials ──────────────────────────────────────────────────────
     st.markdown("""
-    <details class="ws-help-details">
-    <summary>👁️ Demo Credentials (click to reveal)</summary>
-    <div class="ws-help-body">
-        <strong>demo</strong> / demo123 — Viewer access<br>
-        <strong>teamtg</strong> / TECHgium2026 — Engineer access<br>
-        <strong>admin</strong> / windsense2026 — Admin access
-    </div>
-    </details>
-    """, unsafe_allow_html=True)
+<details class="ws-help-details">
+<summary>👁️ Demo Credentials (click to reveal)</summary>
+<div class="ws-help-body">
+    <strong>demo</strong> / demo123 — Viewer access<br>
+    <strong>teamtg</strong> / TECHgium2026 — Engineer access<br>
+    <strong>admin</strong> / windsense2026 — Admin access
+</div>
+</details>
+""", unsafe_allow_html=True)
 
 # ─────────────────────────────────────────────────────────────────────────────
-# TAB 2 — SIGN UP (2-step: Farm Verification → Account Creation)
+# TAB 2 — SIGN UP
 # ─────────────────────────────────────────────────────────────────────────────
 with tab_signup:
 
     st.markdown("""
-    <p style='color:#4FC3F7; font-size:0.85rem; margin-bottom:0.8rem;'>
-        New users must first verify their Wind Farm credentials before creating an account.
-        Contact your Wind Farm administrator for the farm name and secret code.
-    </p>
-    """, unsafe_allow_html=True)
+<p style='color:#4FC3F7; font-size:0.85rem; margin-bottom:0.8rem;'>
+    New users must first verify their Wind Farm credentials before creating an account.
+    Contact your Wind Farm administrator for the farm name and secret code.
+</p>
+""", unsafe_allow_html=True)
 
     # ── Step progress indicator ───────────────────────────────────────────────
     _step = st.session_state.signup_step
@@ -557,19 +562,19 @@ with tab_signup:
     with col_s1:
         _s1_style = "background:#00C9B1; color:#0D1B2A;" if _step >= 0 else "background:#1a2a3a; color:#888;"
         st.markdown(f"""
-        <div style="{_s1_style} border-radius:8px; padding:0.5rem 0.8rem; text-align:center;
-                    font-weight:700; font-size:0.85rem; border:1px solid #00C9B1;">
-            {'✅' if _step > 0 else '①'} Farm Verification
-        </div>
-        """, unsafe_allow_html=True)
+<div style="{_s1_style} border-radius:8px; padding:0.5rem 0.8rem; text-align:center;
+            font-weight:700; font-size:0.85rem; border:1px solid #00C9B1;">
+    {'✅' if _step > 0 else '①'} Farm Verification
+</div>
+""", unsafe_allow_html=True)
     with col_s2:
         _s2_style = "background:#00C9B1; color:#0D1B2A;" if _step >= 1 else "background:#1a2a3a; color:#888;"
         st.markdown(f"""
-        <div style="{_s2_style} border-radius:8px; padding:0.5rem 0.8rem; text-align:center;
-                    font-weight:700; font-size:0.85rem; border:1px solid {'#00C9B1' if _step>=1 else '#2a3a4a'};">
-            {'✅' if _step > 1 else '②'} Create Account
-        </div>
-        """, unsafe_allow_html=True)
+<div style="{_s2_style} border-radius:8px; padding:0.5rem 0.8rem; text-align:center;
+            font-weight:700; font-size:0.85rem; border:1px solid {'#00C9B1' if _step>=1 else '#2a3a4a'};">
+    {'✅' if _step > 1 else '②'} Create Account
+</div>
+""", unsafe_allow_html=True)
 
     st.markdown("<br>", unsafe_allow_html=True)
 
@@ -578,31 +583,26 @@ with tab_signup:
     # ══════════════════════════════════════════════════════════
     if st.session_state.signup_step == 0:
         st.markdown("""
-        <span class="step-badge">1</span>
-        <span class="step-label">Verify Your Wind Farm</span>
-        """, unsafe_allow_html=True)
+<span class="step-badge">1</span>
+<span class="step-label">Verify Your Wind Farm</span>
+""", unsafe_allow_html=True)
         st.markdown("<p style='color:#8899AA; font-size:0.82rem; margin:0.3rem 0 0.8rem 0;'>Select your wind farm and enter the secret code provided by your farm administrator.</p>", unsafe_allow_html=True)
 
-        # ── Farm directory ────────────────────────────────────────────────────
         with st.expander("📋 View Registered Wind Farms"):
             for farm_name, farm_info in WIND_FARMS.items():
                 st.markdown(f"""
-                <div class="farm-card">
-                    <strong>{farm_name}</strong><br>
-                    📍 {farm_info['location']} &nbsp;|&nbsp;
-                    🌀 {farm_info['turbines']} turbines<br>
-                    <span style='color:#8899AA;'>{farm_info['description']}</span>
-                </div>
-                """, unsafe_allow_html=True)
+<div class="farm-card">
+    <strong>{farm_name}</strong><br>
+    📍 {farm_info['location']} &nbsp;|&nbsp;
+    🌀 {farm_info['turbines']} turbines<br>
+    <span style='color:#8899AA;'>{farm_info['description']}</span>
+</div>
+""", unsafe_allow_html=True)
 
         with st.form("farm_verify_form"):
-            farm_options = ["— Select your Wind Farm —"] + list(WIND_FARMS.keys())
-            selected_farm = st.selectbox(
-                "Wind Farm Name",
-                options=farm_options,
-                key="farm_select_box"
-            )
-            farm_secret = st.text_input(
+            farm_options  = ["— Select your Wind Farm —"] + list(WIND_FARMS.keys())
+            selected_farm = st.selectbox("Wind Farm Name", options=farm_options, key="farm_select_box")
+            farm_secret   = st.text_input(
                 "Farm Secret Code",
                 type="password",
                 placeholder="Enter the secret code from your administrator",
@@ -618,11 +618,12 @@ with tab_signup:
                 elif not verify_farm_secret(selected_farm, farm_secret.strip()):
                     st.error("❌ Incorrect secret code for this farm. Contact your administrator.")
                 else:
-                    st.session_state.signup_step      = 1
-                    st.session_state.signup_farm_name = selected_farm
+                    st.session_state.signup_step          = 1
+                    st.session_state.signup_farm_name     = selected_farm
                     st.session_state.signup_farm_verified = True
                     st.success(f"✅ Farm verified: {selected_farm}")
-                    import time; time.sleep(0.6)
+                    import time
+                    time.sleep(0.6)
                     st.rerun()
 
     # ══════════════════════════════════════════════════════════
@@ -633,22 +634,22 @@ with tab_signup:
         farm_info = WIND_FARMS.get(farm_name, {})
 
         st.markdown(f"""
-        <div style="background:linear-gradient(135deg,#003D35,#005C51);
-                    border:1px solid #00C9B1; border-radius:8px;
-                    padding:0.6rem 1rem; margin-bottom:0.8rem;">
-            <span style="color:#00C9B1; font-weight:700;">✅ Verified Farm:</span>
-            <span style="color:#E8F4FD; margin-left:8px;">{farm_name}</span>
-            <span style="color:#7FB9D4; margin-left:12px; font-size:0.82rem;">
-                📍 {farm_info.get('location','')}&nbsp;|&nbsp;
-                🌀 {farm_info.get('turbines','')} turbines
-            </span>
-        </div>
-        """, unsafe_allow_html=True)
+<div style="background:linear-gradient(135deg,#003D35,#005C51);
+            border:1px solid #00C9B1; border-radius:8px;
+            padding:0.6rem 1rem; margin-bottom:0.8rem;">
+    <span style="color:#00C9B1; font-weight:700;">✅ Verified Farm:</span>
+    <span style="color:#E8F4FD; margin-left:8px;">{farm_name}</span>
+    <span style="color:#7FB9D4; margin-left:12px; font-size:0.82rem;">
+        📍 {farm_info.get('location','')}&nbsp;|&nbsp;
+        🌀 {farm_info.get('turbines','')} turbines
+    </span>
+</div>
+""", unsafe_allow_html=True)
 
         st.markdown("""
-        <span class="step-badge">2</span>
-        <span class="step-label">Create Your Account</span>
-        """, unsafe_allow_html=True)
+<span class="step-badge">2</span>
+<span class="step-label">Create Your Account</span>
+""", unsafe_allow_html=True)
         st.markdown("<p style='color:#8899AA; font-size:0.82rem; margin:0.3rem 0 0.8rem 0;'>Your account will be linked to this wind farm. Use your work email address as your username login.</p>", unsafe_allow_html=True)
 
         with st.form("signup_form"):
@@ -684,17 +685,11 @@ with tab_signup:
                 placeholder="Re-enter password",
                 key="signup_pw2"
             )
-
-            st.markdown("""
-            <p style='color:#8899AA; font-size:0.78rem; margin:0.3rem 0;'>
-            Password must be at least 8 characters and contain letters and numbers.
-            </p>
-            """, unsafe_allow_html=True)
+            st.markdown("<p style='color:#8899AA; font-size:0.78rem; margin:0.3rem 0;'>Password must be at least 8 characters and contain letters and numbers.</p>", unsafe_allow_html=True)
 
             create_btn = st.form_submit_button("✅ Create Account", use_container_width=True)
 
             if create_btn:
-                # ── Validation ────────────────────────────────────────────────
                 errors = []
 
                 if not full_name.strip():
@@ -707,7 +702,7 @@ with tab_signup:
                     errors.append("Username cannot contain spaces.")
                 elif len(new_username.strip()) < 3:
                     errors.append("Username must be at least 3 characters.")
-                elif not new_username.strip().replace("_","").replace("-","").isalnum():
+                elif not new_username.strip().replace("_", "").replace("-", "").isalnum():
                     errors.append("Username can only contain letters, numbers, underscores and hyphens.")
                 if not new_password:
                     errors.append("Password is required.")
@@ -729,7 +724,6 @@ with tab_signup:
                     for err in errors:
                         st.error(f"❌ {err}")
                 else:
-                    # ── Save new user ─────────────────────────────────────────
                     reg_users = load_registered_users()
                     reg_users[clean_username] = {
                         "password_hash": hash_password(new_password),
@@ -743,7 +737,6 @@ with tab_signup:
                     saved = save_registered_users(reg_users)
 
                     if saved:
-                        # ── Welcome email ──────────────────────────────────────
                         welcome_html = f"""
                         <p>Dear <strong>{full_name.strip()}</strong>,</p>
                         <p>Your WindSense AI account has been successfully created.</p>
@@ -766,7 +759,6 @@ with tab_signup:
                             email_template("Account Created", welcome_html)
                         )
 
-                        # ── Admin notification email ───────────────────────────
                         admin_html = f"""
                         <p>A new user has registered on WindSense AI.</p>
                         <div style="background:#0D1B2A; border-left:4px solid #FFB347;
@@ -785,26 +777,25 @@ with tab_signup:
                             email_template("New User Registration", admin_html)
                         )
 
-                        # ── Reset signup state & show success ─────────────────
                         st.session_state.signup_step          = 0
                         st.session_state.signup_farm_name     = ''
                         st.session_state.signup_farm_verified = False
                         st.success(f"""
-                        ✅ Account created! Welcome to WindSense AI, {full_name.strip()}.
-                        A confirmation email has been sent to {email_addr.strip()}.
-                        You can now sign in using username: **{clean_username}**
-                        """)
+✅ Account created! Welcome to WindSense AI, {full_name.strip()}.
+A confirmation email has been sent to {email_addr.strip()}.
+You can now sign in using username: **{clean_username}**
+""")
                     else:
                         st.error("❌ Failed to save account. Check that the `data/` folder exists and is writable.")
 
         st.markdown("<br>", unsafe_allow_html=True)
-        if st.button("← Back to Farm Verification", key="back_to_step1", use_container_width=False):
+        if st.button("← Back to Farm Verification", key="back_to_step1"):
             st.session_state.signup_step          = 0
             st.session_state.signup_farm_name     = ''
             st.session_state.signup_farm_verified = False
             st.rerun()
 
-# ── Footer ─────────────────────────────────────────────────────────────────────
+# ── Footer ────────────────────────────────────────────────────────────────────
 st.divider()
 st.markdown("""
 <div style='text-align:center; color:#4FC3F7; font-size:0.78rem; padding-bottom:1rem;'>
