@@ -125,24 +125,41 @@ st.markdown("""
         fill: #00C9B1 !important;
     }
 
-    /* ── Fix sidebar expander arrow corruption ── */
-    [data-testid="stSidebar"] .streamlit-expanderHeader svg,
-    [data-testid="stSidebar"] [data-testid="stExpanderToggleIcon"],
-    [data-testid="stSidebar"] [data-testid="stExpanderToggleIcon"] svg,
-    [data-testid="stSidebar"] details > summary svg,
-    [data-testid="stSidebar"] summary > div > svg,
-    [data-testid="stSidebar"] summary svg {
+    /* ── Fix sidebar expander arrow/text icon corruption ── */
+    [data-testid="stSidebar"] [data-testid="stExpanderToggleIcon"] {
         display: none !important;
         visibility: hidden !important;
         width: 0 !important;
         height: 0 !important;
         overflow: hidden !important;
+        font-size: 0 !important;
+        line-height: 0 !important;
+        position: absolute !important;
+        pointer-events: none !important;
+    }
+    [data-testid="stSidebar"] [data-testid="stExpanderToggleIcon"] * {
+        display: none !important;
+        font-size: 0 !important;
+        width: 0 !important;
+        height: 0 !important;
+    }
+    [data-testid="stSidebar"] .streamlit-expanderHeader svg {
+        display: none !important;
+        width: 0 !important;
+        height: 0 !important;
     }
     [data-testid="stSidebar"] details > summary::before,
     [data-testid="stSidebar"] details > summary::after {
         content: none !important;
         display: none !important;
     }
+    /* ── Collapse any raw text icon nodes inside expander header ── */
+    [data-testid="stSidebar"] .streamlit-expanderHeader > div:first-child:not(:last-child) {
+        font-size: 0 !important;
+        width: 0 !important;
+        overflow: hidden !important;
+    }
+
     /* ── Style sidebar expander headers ── */
     [data-testid="stSidebar"] .streamlit-expanderHeader {
         background-color: #112233 !important;
@@ -1086,7 +1103,6 @@ with st.sidebar:
 
     st.caption("🟢 Detector: ACTIVE" if st.session_state.iso_detector.is_trained else "🔴 Detector: not trained yet")
 
-    st.divider()
     st.divider()
     st.markdown("<p style='color:#00C9B1; font-weight:700; font-size:1rem;'>Help Center & Support</p>", unsafe_allow_html=True)
 
@@ -2130,22 +2146,40 @@ with tab8:
     st.divider()
 
     st.session_state.opcua_sim = OPCUASimulator()
-    for alarm in st.session_state.alarm_buffer[:5]:
-        turbine_id = alarm['asset_id']
-        if turbine_id in st.session_state.opcua_sim.turbine_ids:
-            st.session_state.opcua_sim.active_alarms[turbine_id] = alarm['predicted_type']
+
+    # ── Only inject alarms from the actual buffer — never from simulator internals ──
+    _buffer_has_alarms = len(st.session_state.alarm_buffer) > 0
+    if _buffer_has_alarms:
+        for alarm in st.session_state.alarm_buffer[:5]:
+            turbine_id = alarm['asset_id']
+            if turbine_id in st.session_state.opcua_sim.turbine_ids:
+                st.session_state.opcua_sim.active_alarms[turbine_id] = alarm['predicted_type']
+    else:
+        # Clear all simulator-internal alarm states when buffer is empty
+        st.session_state.opcua_sim.active_alarms = {}
 
     st.subheader("⚡ Live Fleet Status")
     fleet = st.session_state.opcua_sim.get_fleet_summary()
+
+    # ── Derive true alarm count from buffer only ──
+    _true_alarm_turbines = set(str(a['asset_id']) for a in st.session_state.alarm_buffer)
+    _true_in_alarm       = len(_true_alarm_turbines) if _buffer_has_alarms else 0
+    _true_normal         = len(st.session_state.opcua_sim.turbine_ids) - _true_in_alarm
+
     col1, col2, col3, col4 = st.columns(4)
     with col1: st.metric("🔋 Total Fleet Power",  f"{fleet['total_power_kw']:,.0f} kW")
-    with col2: st.metric("✅ Turbines Normal",    fleet['turbines_normal'])
-    with col3: st.metric("🚨 Turbines in Alarm", fleet['turbines_in_alarm'], delta_color="inverse")
+    with col2: st.metric("✅ Turbines Normal",    max(0, _true_normal))
+    with col3: st.metric("🚨 Turbines in Alarm",  _true_in_alarm, delta_color="inverse")
     with col4: st.metric("📡 Grid Frequency",    f"{fleet['grid_frequency_hz']} Hz")
 
-    if fleet.get('active_alarm_types'):
-        for alarm in fleet['active_alarm_types']:
-            st.error(f"🚨 ACTIVE ALARM DETECTED: {alarm}")
+    # ── Only show alarm banners if alarms exist in buffer ──
+    if _buffer_has_alarms:
+        _buffer_alarm_types = list(set(a['predicted_type'] for a in st.session_state.alarm_buffer
+                                       if a.get('priority') == 'CRITICAL'))
+        for _atype in _buffer_alarm_types[:3]:
+            st.error(f"🚨 ACTIVE ALARM DETECTED: {_atype}")
+    else:
+        st.success("✅ No active alarms — fleet operating normally")
 
     st.divider()
     st.subheader("📋 OPC UA Node Data — Live Snapshot")
