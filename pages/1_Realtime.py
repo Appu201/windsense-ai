@@ -1164,50 +1164,161 @@ with st.sidebar:
     st.divider()
     st.markdown("<p style='color:#00C9B1; font-weight:700; font-size:1rem;'>Help Center & Support</p>", unsafe_allow_html=True)
 
-    with st.expander("📖 FAQ"):
-        st.markdown("""
-<div style='color:#E8F4FD; font-size:0.82rem;'>
-<strong>Tab 1 — Real-Time Monitoring</strong><br>
-Generate alarms using the sidebar button. Each alarm is classified automatically by the ML model.<br><br>
-<strong>Tab 2 — ML Model & Training</strong><br>
-View model performance, accuracy, and the 19 alarm types the system can detect.<br><br>
-<strong>Tab 3 — Historical Analytics</strong><br>
-Browse past alarm data, filter by turbine or type, and export reports.<br><br>
-<strong>Tab 4 — Notifications & Workflow</strong><br>
-See active alarms. Use the acknowledge button to mark alarms as resolved.<br><br>
-<strong>Tab 5 — DMAIC Analysis</strong><br>
-View structured corrective actions following the DMAIC methodology.<br><br>
-<strong>Tab 6 — Optimization</strong><br>
-See system-level KPIs and optimization suggestions based on alarm patterns.<br><br>
-<strong>Tab 7 — Anomaly Review</strong><br>
-Unknown alarm patterns appear here. Rename and add to database, or dismiss.<br><br>
-<strong>Tab 8 — OPC UA Live Feed</strong><br>
-Live industrial sensor data from the OPC UA simulation layer.<br><br>
-<strong>🔴 Red alarm?</strong> Critical priority — needs immediate action.<br>
-<strong>❓ Unknown Anomaly?</strong> New pattern — review in Tab 7.<br>
-<strong>✅ Acknowledge?</strong> Go to Tab 7, click Acknowledge, enter your name.
-</div>
-""", unsafe_allow_html=True)
+    st.markdown("""
+<style>
+/* ── Arrow-free custom expanders for Help Center ── */
+.ws-help-details {
+    background-color: #112233;
+    border: 1px solid #00C9B1;
+    border-radius: 8px;
+    margin-bottom: 0.5rem;
+    overflow: hidden;
+}
+.ws-help-details summary {
+    list-style: none !important;
+    cursor: pointer;
+    padding: 0.55rem 0.85rem;
+    color: #00C9B1;
+    font-weight: 700;
+    font-size: 0.88rem;
+    user-select: none;
+    background-color: #112233;
+}
+.ws-help-details summary::-webkit-details-marker { display: none !important; }
+.ws-help-details summary::marker { display: none !important; }
+.ws-help-details[open] summary { border-bottom: 1px solid #1E3A5F; }
+.ws-help-body {
+    padding: 0.7rem 0.85rem;
+    color: #E8F4FD;
+    font-size: 0.82rem;
+    line-height: 1.6;
+    background-color: #0D1B2A;
+}
+.ws-help-body strong { color: #00C9B1; }
+.ws-help-body .ws-step {
+    background: #112233;
+    border-left: 3px solid #00C9B1;
+    padding: 0.35rem 0.6rem;
+    margin: 0.3rem 0;
+    border-radius: 0 4px 4px 0;
+}
+.ws-help-body a { color: #4FC3F7; text-decoration: none; }
+.ws-help-body a:hover { text-decoration: underline; }
+</style>
 
-    with st.expander("📚 Alarm Type Glossary"):
-        st.markdown("""
-<div style='color:#E8F4FD; font-size:0.82rem;'>
-- <strong>Grid Voltage Fluctuation</strong> — Unstable grid voltage supply<br>
-- <strong>Generator Bearing Overheating</strong> — Bearing temp exceeds safe threshold<br>
-- <strong>Gearbox Oil Pressure Drop</strong> — Low lubrication pressure in gearbox<br>
-- <strong>Pitch System Hydraulic Fault</strong> — Blade pitch control failure<br>
-- <strong>Transformer Oil Temp High</strong> — Overheating in transformer oil<br>
-- <strong>Yaw System Misalignment</strong> — Turbine not facing into wind correctly<br>
-- <strong>Tower Vibration Alert</strong> — Structural vibration exceeds safe level<br>
-- <strong>Unknown Anomaly</strong> — New pattern not in training database; needs review
+<details class="ws-help-details">
+<summary>📖 Tab-by-Tab Guide</summary>
+<div class="ws-help-body">
+<div class="ws-step"><strong>Tab 1 — Real-Time Monitoring</strong><br>Click <em>Generate New Alarm</em> in the sidebar. Each alarm is classified by the Random Forest ML model instantly. The live stream shows alarm ID, priority, turbine, type and confidence score. Red = Critical. Download the log as CSV anytime.</div>
+<div class="ws-step"><strong>Tab 2 — ML Model &amp; Training</strong><br>View model accuracy (94.8%), feature importance chart, and the full list of 19 trained alarm types. No action needed — the model is pre-loaded and always active.</div>
+<div class="ws-step"><strong>Tab 3 — Historical Analytics</strong><br>9.9 years of SCADA data. Browse the top 50 critical alarms ranked by impact, department breakdown charts, downtime analysis, and an alarm heatmap by turbine and hour of day.</div>
+<div class="ws-step"><strong>Tab 4 — Notifications &amp; Workflow</strong><br>See the 6-step resolution workflow. View Email + WhatsApp notification logs. Check which alarms have been escalated to management. Browse the full stakeholder directory.</div>
+<div class="ws-step"><strong>Tab 5 — DMAIC Analysis</strong><br>Select any alarm type to see its full DMAIC report: Define → Measure → Analyze → Improve → Control. Each section has plain-language corrective actions for field technicians.</div>
+<div class="ws-step"><strong>Tab 6 — Optimization</strong><br>LPF (Lost Production Factor) breakdown, 6-month alarm forecast charts, full implementation roadmap, and ROI calculations. Use this for management reporting.</div>
+<div class="ws-step"><strong>Tab 7 — Alarm Acknowledgment</strong><br>See all active unacknowledged alarms. Enter your name, select action taken, add notes, then click Acknowledge. Tracks response time automatically. Also shows acknowledgment history.</div>
+<div class="ws-step"><strong>Tab 8 — OPC UA Live Feed</strong><br>Live industrial sensor data from the OPC UA simulation layer. Shows fleet power, node readings, and active alarm nodes. Also contains the Anomaly Review panel for unknown fault patterns.</div>
 </div>
-""", unsafe_allow_html=True)
+</details>
 
-    with st.expander("🐛 Report an Issue"):
-        st.markdown("""
-<div style='color:#E8F4FD; font-size:0.82rem;'>
-Email us directly at <strong>windsenseada@gmail.com</strong> or use the support contact below.
+<details class="ws-help-details">
+<summary>❓ FAQ — Top Operator Questions</summary>
+<div class="ws-help-body">
+<strong>Q: What does a red alarm mean?</strong><br>Red = CRITICAL priority. Immediate action required. The system has already notified the assigned technician via Email and WhatsApp.<br><br>
+<strong>Q: What does orange or yellow mean?</strong><br>Orange = HIGH priority. Yellow = MEDIUM. Both need attention but are not immediately dangerous.<br><br>
+<strong>Q: How do I acknowledge an alarm?</strong><br>Go to Tab 7, find the alarm, enter your name, select the action taken, and click ✅ Acknowledge. You can also acknowledge directly from the Email or WhatsApp notification link.<br><br>
+<strong>Q: What is LPF?</strong><br>Lost Production Factor — the percentage of potential energy output that was lost due to downtime. Current LPF is 3.64%. Target is below 2.0%.<br><br>
+<strong>Q: What does "Confidence" mean on an alarm?</strong><br>It shows how certain the AI model is about its alarm classification. Above 85% = High (green). 70–85% = Moderate (orange). Below 70% = Uncertain — requires manual inspection.<br><br>
+<strong>Q: I got an alarm email. What do I do?</strong><br>Click the green ✅ ACKNOWLEDGE button in the email. This updates the dashboard immediately. Then follow the recommended actions in the email body.<br><br>
+<strong>Q: What is DMAIC?</strong><br>A structured problem-solving method: Define, Measure, Analyze, Improve, Control. Tab 5 shows the full corrective action plan for each of the 19 alarm types.<br><br>
+<strong>Q: What is an Unknown Anomaly?</strong><br>A sensor pattern the AI has not seen before. It appears as a red flag. Review it in Tab 8 → Anomaly Review Panel. See the Unknown Alarms section below for the 3-step guide.<br><br>
+<strong>Q: Why is the anomaly detector showing "not trained yet"?</strong><br>Generate at least 10 alarms first, then click "Train Anomaly Detector" in the sidebar. The Isolation Forest model needs a minimum dataset to learn normal patterns.<br><br>
+<strong>Q: Can I use this dashboard on my phone?</strong><br>Yes. Open windsense-ai.streamlit.app in any mobile browser. The layout adjusts automatically. No app install needed.<br><br>
+<strong>Q: How do I export alarm data?</strong><br>Each tab with a data table has a Download CSV button at the bottom. Click it to save the current view to your device.<br><br>
+<strong>Q: Who gets notified when a critical alarm fires?</strong><br>The primary stakeholder assigned to that alarm type gets Email + WhatsApp immediately. The secondary contact gets an email copy. Management is auto-escalated if no acknowledgment is received within the configured time window.<br><br>
+<strong>Q: What happens if the email fails to send?</strong><br>The system queues the email and retries automatically. Status shows as QUEUED in the notification log (Tab 4) until delivered.<br><br>
+<strong>Q: How accurate is the AI classification?</strong><br>94.8% accuracy on the test set. The model was trained on 978,000+ SCADA readings across 9.9 years and 5 turbines.<br><br>
+<strong>Q: What are the 19 alarm types?</strong><br>See the Alarm Type Glossary section below for all 19 with plain-language descriptions.<br><br>
+<strong>Q: What is OPC UA?</strong><br>OPC Unified Architecture — an industrial communication standard used by SCADA systems. Tab 8 shows a simulated live OPC UA data feed that mirrors what a real turbine controller would transmit.<br><br>
+<strong>Q: Can I add a new alarm type?</strong><br>Yes — when an unknown anomaly is detected, use the Anomaly Review Panel in Tab 8 to name it and add it to the database.<br><br>
+<strong>Q: How do I report a bug or issue?</strong><br>See the Report an Issue section below. Click the button to send a pre-formatted email to the WindSense team.<br><br>
+<strong>Q: What is the escalation time?</strong><br>Each alarm type has a configured escalation window (e.g. 30 minutes for Controller Faults, 480 minutes for Hydraulic Faults). If unacknowledged within this window, the management contact is notified automatically.<br><br>
+<strong>Q: How do I clear the alarm buffer?</strong><br>Click the 🗑️ Clear Buffer button in the sidebar. This resets all active alarms and the notification log for the current session.
 </div>
+</details>
+
+<details class="ws-help-details">
+<summary>📚 Alarm Type Glossary (All 19)</summary>
+<div class="ws-help-body">
+<strong>1. Main Controller Fault</strong> — The turbine's central computer has reported an error. The turbine may stop automatically.<br><br>
+<strong>2. Extended Grid Outage</strong> — The power grid connection has been lost for a prolonged period. The turbine cannot export power.<br><br>
+<strong>3. Grid Frequency Deviation</strong> — The grid frequency has drifted outside the safe operating range (normally 50 Hz). Turbine may disconnect to protect equipment.<br><br>
+<strong>4. Momentary Grid Loss</strong> — A brief interruption in grid connection, usually under 1 minute. Often resolves automatically.<br><br>
+<strong>5. Grid Voltage Fluctuation</strong> — The grid supply voltage is unstable, causing potential damage to electrical components.<br><br>
+<strong>6. Emergency Brake Activation</strong> — The rotor brakes have been triggered by a safety system. The turbine has stopped rotating.<br><br>
+<strong>7. Safety System Activation</strong> — One or more safety sensors has triggered a protective shutdown. Inspection required before restart.<br><br>
+<strong>8. Overspeed Protection Triggered</strong> — The rotor exceeded its maximum safe RPM. The pitch and brake systems activated to stop the turbine.<br><br>
+<strong>9. Yaw System Hydraulic Fault</strong> — The system that turns the turbine to face the wind has lost hydraulic pressure or has a valve fault.<br><br>
+<strong>10. Pitch System Hydraulic Fault</strong> — The blade angle control system has a hydraulic fault. Blades may be stuck and unable to adjust to wind speed.<br><br>
+<strong>11. Hydraulic Oil Contamination</strong> — Oil samples or sensors indicate contamination in the hydraulic fluid. Can cause valve and seal damage if unaddressed.<br><br>
+<strong>12. Converter Circuit Fault</strong> — The power electronics unit that converts generated AC/DC power has reported a circuit fault.<br><br>
+<strong>13. Generator Bearing Overheating</strong> — The main generator bearings have exceeded safe operating temperature. Risk of seizure if not addressed quickly.<br><br>
+<strong>14. Power Electronics Failure</strong> — A component in the power electronics cabinet (IGBT, capacitor, etc.) has failed or is degraded.<br><br>
+<strong>15. Transformer Oil Temperature High</strong> — The transformer oil has exceeded its safe temperature threshold. Cooling system may have failed.<br><br>
+<strong>16. Hydraulic Filter Clogged</strong> — The hydraulic oil filter is blocked, restricting flow. Requires filter replacement during next maintenance window.<br><br>
+<strong>17. Generator Winding Temperature High</strong> — The electrical windings inside the generator are overheating. Could indicate cooling duct blockage or insulation breakdown.<br><br>
+<strong>18. Hydraulic Pressure Drop</strong> — A sudden loss of pressure in the hydraulic circuit. Could indicate a leak, pump failure, or burst line.<br><br>
+<strong>19. Hydraulic Valve Response Slow</strong> — A hydraulic valve is not responding within its expected time window. Often caused by contaminated fluid or worn valve components.
+</div>
+</details>
+
+<details class="ws-help-details">
+<summary>🔬 What is DMAIC? (Plain Language)</summary>
+<div class="ws-help-body">
+DMAIC is a structured 5-step method for fixing recurring problems. WindSense AI applies it to all 19 alarm types so every technician knows exactly what to do — not just that something went wrong.<br><br>
+<strong>D — Define:</strong> What is this alarm? When does it happen? What equipment is affected?<br><br>
+<strong>M — Measure:</strong> How often does it occur? How long does it last? How much production does it cost?<br><br>
+<strong>A — Analyze:</strong> What is the root cause? What contributing factors make it worse?<br><br>
+<strong>I — Improve:</strong> What specific actions will fix it? What is the expected benefit after implementation?<br><br>
+<strong>C — Control:</strong> How do we monitor it going forward? What thresholds trigger a new alert? How often do we review?<br><br>
+<em>Example:</em> For Generator Bearing Overheating — the root cause is insufficient lubrication. The improvement is installing automatic lubrication systems. The control is a temperature alert at 75°C with weekly oil analysis review.<br><br>
+See Tab 5 for the full DMAIC report for any of the 19 alarm types.
+</div>
+</details>
+
+<details class="ws-help-details">
+<summary>🔴 Unknown Anomaly — What To Do</summary>
+<div class="ws-help-body">
+When the Isolation Forest AI detects a sensor pattern it has never seen before, it flags it as an <strong style="color:#ff4444;">Unknown Anomaly</strong>. This is not an error — it means a potentially new fault type has been discovered.<br><br>
+<strong>You will see:</strong> A red 🔴 flag in the alarm stream (Tab 1) and a warning banner. The anomaly is held in the Anomaly Review Panel in Tab 8.<br><br>
+<strong>3-Step Response Guide:</strong><br>
+<div class="ws-step"><strong>Step 1 — Review Sensor Data</strong><br>Go to Tab 8 → Anomaly Review Panel. Open the anomaly entry. Check the sensor snapshot — which readings look abnormal? Compare against the known alarm glossary.</div>
+<div class="ws-step"><strong>Step 2 — Name and Add to Database</strong><br>If you can identify the fault type, type the name in the "Rename this anomaly type" field and click ➕ Add to Alarm DB. This adds it to the system's known patterns for future classification. If you're unsure, click ✅ Mark as Known to remove it from the review queue without renaming.</div>
+<div class="ws-step"><strong>Step 3 — Notify Supervisor</strong><br>For any genuinely new fault pattern you cannot identify, contact your supervisor and email the WindSense team at windsenseada@gmail.com with the Alarm ID, sensor readings, and turbine number. Include a screenshot if possible.</div>
+<br><em>Note: The Isolation Forest anomaly detector must be trained first. Generate 10+ alarms in Tab 1, then click "Train Anomaly Detector" in the sidebar.</em>
+</div>
+</details>
+
+<details class="ws-help-details">
+<summary>📞 Support &amp; Contact</summary>
+<div class="ws-help-body">
+<strong>📧 Email Support</strong><br>
+Non-urgent queries: <a href="mailto:windsenseada@gmail.com">windsenseada@gmail.com</a><br>
+Response within 24 hours on working days.<br><br>
+<strong>🐛 Report an Issue</strong><br>
+Found a bug or display problem? Click the button below — it opens a pre-formatted email to the WindSense team so you don't have to write anything from scratch.<br><br>
+<a href="mailto:windsenseada@gmail.com?subject=WindSense%20AI%20-%20Bug%20Report&body=Dashboard%20URL%3A%20windsense-ai.streamlit.app%0A%0ADescribe%20the%20issue%3A%0A%0ATab%20where%20it%20occurred%3A%0A%0ASteps%20to%20reproduce%3A%0A%0AExpected%20behaviour%3A%0A%0AActual%20behaviour%3A"
+   style="display:inline-block; background:linear-gradient(135deg,#004D40,#00796B);
+          color:white; padding:8px 18px; border-radius:6px; font-weight:700;
+          text-decoration:none; margin:4px 0;">
+   🐛 Report an Issue
+</a><br><br>
+<strong>📋 Team</strong><br>
+WindSense AI — Team TG0907494<br>
+TECHgium 9th Edition<br><br>
+<strong>🌐 Dashboard URL</strong><br>
+<a href="https://windsense-ai.streamlit.app">windsense-ai.streamlit.app</a> — accessible on any device, no login needed to view Help.
+</div>
+</details>
 """, unsafe_allow_html=True)
 
 # ═══════════════════════════════════════════════════════════════════
