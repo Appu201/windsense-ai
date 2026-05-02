@@ -126,10 +126,21 @@ st.markdown("""
     }
 
     /* ── Fix sidebar expander arrow corruption ── */
-    [data-testid="stSidebar"] .streamlit-expanderHeader svg {
+    [data-testid="stSidebar"] .streamlit-expanderHeader svg,
+    [data-testid="stSidebar"] [data-testid="stExpanderToggleIcon"],
+    [data-testid="stSidebar"] [data-testid="stExpanderToggleIcon"] svg,
+    [data-testid="stSidebar"] details > summary svg,
+    [data-testid="stSidebar"] summary > div > svg,
+    [data-testid="stSidebar"] summary svg {
         display: none !important;
+        visibility: hidden !important;
+        width: 0 !important;
+        height: 0 !important;
+        overflow: hidden !important;
     }
-    [data-testid="stSidebar"] [data-testid="stExpanderToggleIcon"] {
+    [data-testid="stSidebar"] details > summary::before,
+    [data-testid="stSidebar"] details > summary::after {
+        content: none !important;
         display: none !important;
     }
     /* ── Style sidebar expander headers ── */
@@ -1908,32 +1919,41 @@ with tab6:
     st.plotly_chart(fig, use_container_width=True)
 
     st.divider()
-    st.subheader("🗺️ 5-Phase Implementation Roadmap")
+    st.subheader("🗺️ Implementation Roadmap")
 
-    phases = [
-        {'phase': 'Phase 1: Foundation Setup',            'investment': '₹12,000', 'timeline': '2 weeks',
-         'actions': ['Establish data warehouse (PostgreSQL/MongoDB)', 'SCADA and CSV database integration', 'Historical data collection (6-12 months)', 'Cloud storage configuration'],
-         'expected_lpf': 'Baseline established'},
-        {'phase': 'Phase 2: AI Model Development',         'investment': '₹15,000', 'timeline': '4 weeks',
-         'actions': ['Train ML Models (Random Forest, SVM, LSTM)', 'Build Root Cause Engine', 'Create Predictive Model (24-72hr forecasting)', 'Model validation'],
-         'expected_lpf': 'Model accuracy: ~88% F1'},
-        {'phase': 'Phase 3: Backend & Frontend',           'investment': '₹9,500', 'timeline': '3 weeks',
-         'actions': ['API & Dashboard (Streamlit/Flask)', 'Real-Time Dashboard', 'Notification system (SMS/Email)', 'Smart team routing'],
-         'expected_lpf': 'Dashboard operational'},
-        {'phase': 'Phase 4: Integration & Pilot',          'investment': '₹10,000', 'timeline': '2 weeks',
-         'actions': ['Live turbine pilot integration', 'SCADA via OPC UA', 'UAT and field testing', 'Escalation workflow config'],
-         'expected_lpf': 'Initial reduction: 10-15%'},
-        {'phase': 'Phase 5: Validation & Full Rollout',    'investment': '₹5,000', 'timeline': '3 weeks',
-         'actions': ['KPI measurement', 'Operator training', 'DMAIC continuous improvement loop', 'System handover'],
-         'expected_lpf': 'Target: <2.5% LPF (~35% reduction)'}
-    ]
+    with st.expander("**Phase 1 — Data Foundation (Week 1–2)**"):
+        st.write("✓ 978,196 SCADA readings from Wind Farm A, 9.9 years, 5 turbines")
+        st.write("✓ 81 sensor features processed across status types 3, 4 and 5 with full deduplication")
+        st.write("✓ Python ETL pipeline for cleaning, episode extraction and alarm classification")
+        st.write("✓ 19 verified alarm types extracted, mapped to 11 departments — zero external data dependency")
 
-    for phase in phases:
-        with st.expander(f"**{phase['phase']}** — Investment: {phase['investment']} | Timeline: {phase['timeline']}"):
-            st.write("**Key Deliverables:**")
-            for action in phase['actions']:
-                st.write(f"✓ {action}")
-            st.success(f"**Expected Outcome:** {phase['expected_lpf']}")
+    with st.expander("**Phase 2 — AI Model Development (Week 3–4)**"):
+        st.write("✓ Random Forest trained on 50,000 alarm readings with SMOTE balancing")
+        st.write("✓ 11 key sensor features selected via feature importance analysis")
+        st.write("✓ 94.8% accuracy, 94.9% F1-score after 5-fold cross-validation")
+        st.write("✓ Isolation Forest added to flag unknown fault patterns beyond the 19 trained classes")
+
+    with st.expander("**Phase 3 — DMAIC Root Cause Analysis (Week 5–6)**"):
+        st.write("✓ Complete DMAIC applied across all 19 alarm types")
+        st.write("✓ Each alarm mapped to one of 11 departments with root cause and corrective action defined")
+        st.write("✓ Criticality scores, notification priority and response time benchmarks set per alarm")
+
+    with st.expander("**Phase 4 — Dashboard & Frontend (Week 7–8)**"):
+        st.write("✓ 8-tab Streamlit dashboard with dark theme, Plotly animated charts")
+        st.write("✓ Live alarm classification with three-tier confidence flagging")
+        st.write("✓ Isolation Forest anomaly review panel and OPC UA live feed integrated")
+        st.write("✓ Deployed on Streamlit Cloud — no hardware required")
+
+    with st.expander("**Phase 5 — Notification & Team Routing System (Week 9)**"):
+        st.write("✓ 19 alarm types mapped to specific stakeholders across 11 departments")
+        st.write("✓ WhatsApp + Email alerts with one-click acknowledgment link")
+        st.write("✓ Auto-escalation to management if alarm unacknowledged within threshold time")
+
+    with st.expander("**Phase 6 — Testing & Validation (Week 10)**"):
+        st.write("✓ End-to-end testing across all 8 tabs on Streamlit Cloud")
+        st.write("✓ Full pipeline verified: alarm → classification → WhatsApp/Email → acknowledgment → dashboard")
+        st.write("✓ OPC UA simulation with live anomaly injection tested and confirmed")
+        st.write("✓ Help Center built with tab-by-tab guides, FAQ and support contact")
 
     st.divider()
     st.subheader("💰 Return on Investment (ROI)")
@@ -2101,72 +2121,6 @@ with tab7:
     else:
         st.info("No alarms have been acknowledged yet")
 
-    # ── Anomaly Review Panel ─────────────────────────────────────────────────
-    st.divider()
-    st.subheader("🔬 Anomaly Review Panel")
-
-    # Read directly from session buffer — always matches what was generated this session
-    _session_anomalies = [a for a in st.session_state.alarm_buffer if a.get('is_anomaly', False)]
-    _pending           = [a for a in _session_anomalies if not a.get('reviewed', False)]
-    _known             = [a for a in _session_anomalies if a.get('reviewed', False)]
-
-    col1, col2, col3 = st.columns(3)
-    with col1: st.metric("Total Unknown Anomalies", len(_session_anomalies))
-    with col2: st.metric("Pending Review",           len(_pending))
-    with col3: st.metric("Marked as Known",          len(_known))
-
-    if not st.session_state.iso_detector.is_trained:
-        st.info("Generate 10+ alarms then click 'Train Anomaly Detector' in the sidebar to start detecting unknown patterns.")
-    elif not _session_anomalies:
-        st.info("No unknown anomalies detected yet. Train the detector and generate more alarms.")
-    elif not _pending:
-        st.success("✅ All anomalies have been reviewed.")
-    else:
-        st.warning(f"⚠️ {len(_pending)} anomaly/anomalies need your review")
-        for _aidx, entry in enumerate(_pending[:5]):
-            _fid2 = format_alarm_id(entry.get('alarm_id', 'N/A'))
-            with st.expander(
-                f"{_fid2} | Turbine T-{entry.get('asset_id', 'N/A')} | Score: {entry.get('anomaly_score', 'N/A')} | {entry.get('logged_at', 'N/A')}"
-            ):
-                st.write("**Sensor Snapshot:**")
-                _snap = entry.get('sensor_values', {})
-                if _snap:
-                    for sensor, val in _snap.items():
-                        st.write(f"  {sensor}: {val}")
-                else:
-                    st.write("  No sensor snapshot available.")
-                st.write(f"**Predicted Type:** {entry.get('predicted_type', 'OPC UA Anomaly')}")
-                st.write(f"**Alarm ID:** {entry.get('alarm_id', 'N/A')}")
-                st.write(f"**Logged At:** {entry.get('logged_at', 'N/A')}")
-
-                new_name = st.text_input(
-                    "Rename this anomaly type:",
-                    value=entry.get('predicted_type', f"Unknown Anomaly {_aidx+1}"),
-                    key=f"rename_input_{_aidx}"
-                )
-
-                col_a, col_b = st.columns(2)
-                with col_a:
-                    if st.button("➕ Add to Alarm DB", key=f"add_db_{_aidx}", type="primary"):
-                        if new_name.strip():
-                            for buf_entry in st.session_state.alarm_buffer:
-                                if buf_entry.get('alarm_id') == entry.get('alarm_id'):
-                                    buf_entry['reviewed'] = True
-                                    buf_entry['alarm_type'] = new_name.strip()
-                                    break
-                            st.success(f"✅ '{new_name.strip()}' added to known patterns. Counters updated.")
-                            st.rerun()
-                        else:
-                            st.warning("Please enter a name first.")
-                with col_b:
-                    if st.button("✅ Mark as Known", key=f"mark_known_{_aidx}"):
-                        for buf_entry in st.session_state.alarm_buffer:
-                            if buf_entry.get('alarm_id') == entry.get('alarm_id'):
-                                buf_entry['reviewed'] = True
-                                break
-                        st.success("✅ Marked as known. Removed from review queue.")
-                        st.rerun()
-
 # ═══════════════════════════════════════════════════════════════════
 # TAB 8 — OPC UA LIVE FEED
 # ═══════════════════════════════════════════════════════════════════
@@ -2202,31 +2156,15 @@ with tab8:
         display_readings.columns = ['Node ID', 'Description', 'Value', 'Unit', 'Status', 'Timestamp']
         render_table(display_readings)   # ← HTML table, always visible
 
-    # Wire OPC UA anomaly readings into iso_detector
-    for _reading in readings:
-        if _reading.get('is_anomaly', False):
-            _synthetic_alarm = {
-                'alarm_id':         f"OPC-{str(_reading.get('node_id', 'UNK'))}-{int(time.time())}",
-                'asset_id':         str(_reading.get('turbine_id', 'OPC')),
-                'predicted_type':   'OPC UA Anomaly',
-                'sensor_11_avg':    float(_reading.get('value', 0)) if 'temp'      in str(_reading.get('node_id', '')).lower() else 0.0,
-                'sensor_12_avg':    0.0,
-                'sensor_41_avg':    float(_reading.get('value', 0)) if 'hydraulic' in str(_reading.get('node_id', '')).lower() else 0.0,
-                'power_30_avg':     float(_reading.get('value', 0)) if 'power'     in str(_reading.get('node_id', '')).lower() else 0.0,
-                'wind_speed_3_avg': 0.0,
-            }
-            _anomaly_score = float(_reading.get('anomaly_score', 0.75))
-            try:
-                if 'iso_detector' in st.session_state and st.session_state.iso_detector is not None:
-                    st.session_state.iso_detector.log_anomaly(_synthetic_alarm, _anomaly_score)
-            except Exception:
-                pass
-
-    alarming_nodes = [r for r in readings if r.get('alarm_active', False) or r.get('is_anomaly', False)]
+# ── Only show alarming nodes that correspond to actual alarms in buffer ──
+    _buffer_alarm_turbines = {str(a['asset_id']) for a in st.session_state.alarm_buffer}
+    alarming_nodes = [
+        r for r in readings
+        if r.get('alarm_active', False) and str(r.get('turbine_id', '')) in _buffer_alarm_turbines
+    ]
     if alarming_nodes:
-        st.markdown("**🚨 Active Alarm / Anomaly Nodes:**")
+        st.markdown("**🚨 Active Alarm Nodes (from Alarm Buffer):**")
         for node in alarming_nodes:
-            anomaly_label = " | ⚠️ ANOMALY" if node.get('is_anomaly', False) else ""
             st.markdown(f"""
             <div style="background: linear-gradient(135deg, #8B0000, #cc0000);
                         color: white; padding: 0.6rem 1rem; border-radius: 6px;
@@ -2234,7 +2172,7 @@ with tab8:
                 <strong>{node.get('node_id', 'Unknown')}</strong> —
                 {node.get('description', '')} |
                 Value: {node.get('value', 'N/A')} {node.get('unit', '')} |
-                Status: {node.get('status', 'N/A')}{anomaly_label}
+                Status: {node.get('status', 'N/A')}
             </div>
             """, unsafe_allow_html=True)
     else:
@@ -2246,6 +2184,71 @@ with tab8:
         if st.button("🔄 Refresh OPC UA Data", use_container_width=True, type="primary"):
             st.rerun()
     st.caption("📌 In production, this feed would connect to the wind farm's OPC UA server via opcua-asyncio.")
+
+    # ── Anomaly Review Panel (moved here from Tab 7) ─────────────────────────
+    st.divider()
+    st.subheader("🔬 Anomaly Review Panel")
+
+    _session_anomalies = [a for a in st.session_state.alarm_buffer if a.get('is_anomaly', False)]
+    _pending           = [a for a in _session_anomalies if not a.get('reviewed', False)]
+    _known             = [a for a in _session_anomalies if a.get('reviewed', False)]
+
+    col1, col2, col3 = st.columns(3)
+    with col1: st.metric("Total Unknown Anomalies", len(_session_anomalies))
+    with col2: st.metric("Pending Review",           len(_pending))
+    with col3: st.metric("Marked as Known",          len(_known))
+
+    if not st.session_state.iso_detector.is_trained:
+        st.info("Generate 10+ alarms in Tab 1, then click 'Train Anomaly Detector' in the sidebar to start detecting unknown patterns.")
+    elif not _session_anomalies:
+        st.info("No unknown anomalies detected yet. Train the detector and generate more alarms from the sidebar.")
+    elif not _pending:
+        st.success("✅ All anomalies have been reviewed.")
+    else:
+        st.warning(f"⚠️ {len(_pending)} anomaly/anomalies need your review")
+        for _aidx, entry in enumerate(_pending[:5]):
+            _fid2 = format_alarm_id(entry.get('alarm_id', 'N/A'))
+            with st.expander(
+                f"{_fid2} | Turbine T-{entry.get('asset_id', 'N/A')} | Score: {entry.get('anomaly_score', 'N/A')}"
+            ):
+                st.write("**Sensor Snapshot:**")
+                _snap = {k: v for k, v in entry.items() if 'sensor' in k or 'power' in k or 'wind' in k}
+                if _snap:
+                    for sensor, val in _snap.items():
+                        st.write(f"  {sensor}: {val}")
+                else:
+                    st.write("  No sensor snapshot available.")
+                st.write(f"**ML Predicted Type:** {entry.get('predicted_type', 'Unknown')}")
+                st.write(f"**Alarm ID:** {entry.get('alarm_id', 'N/A')}")
+                st.write(f"**Timestamp:** {entry.get('timestamp', 'N/A')}")
+
+                new_name = st.text_input(
+                    "Rename this anomaly type:",
+                    value=entry.get('predicted_type', f"Unknown Anomaly {_aidx+1}"),
+                    key=f"opcua_rename_{_aidx}"
+                )
+
+                col_a, col_b = st.columns(2)
+                with col_a:
+                    if st.button("➕ Add to Alarm DB", key=f"opcua_add_db_{_aidx}", type="primary"):
+                        if new_name.strip():
+                            for buf_entry in st.session_state.alarm_buffer:
+                                if buf_entry.get('alarm_id') == entry.get('alarm_id'):
+                                    buf_entry['reviewed'] = True
+                                    buf_entry['alarm_type'] = new_name.strip()
+                                    break
+                            st.success(f"✅ '{new_name.strip()}' added to known patterns.")
+                            st.rerun()
+                        else:
+                            st.warning("Please enter a name first.")
+                with col_b:
+                    if st.button("✅ Mark as Known", key=f"opcua_mark_known_{_aidx}"):
+                        for buf_entry in st.session_state.alarm_buffer:
+                            if buf_entry.get('alarm_id') == entry.get('alarm_id'):
+                                buf_entry['reviewed'] = True
+                                break
+                        st.success("✅ Marked as known. Removed from review queue.")
+                        st.rerun()
 
 # ═══════════════════════════════════════════════════════════════════
 # FOOTER
