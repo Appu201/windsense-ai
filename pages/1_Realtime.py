@@ -1305,13 +1305,7 @@ When the Isolation Forest AI detects a sensor pattern it has never seen before, 
 Non-urgent queries: <a href="mailto:windsenseada@gmail.com">windsenseada@gmail.com</a><br>
 Response within 24 hours on working days.<br><br>
 <strong>🐛 Report an Issue</strong><br>
-Found a bug or display problem? Click the button below — it opens a pre-formatted email to the WindSense team so you don't have to write anything from scratch.<br><br>
-<a href="mailto:windsenseada@gmail.com?subject=WindSense%20AI%20-%20Bug%20Report&body=Dashboard%20URL%3A%20windsense-ai.streamlit.app%0A%0ADescribe%20the%20issue%3A%0A%0ATab%20where%20it%20occurred%3A%0A%0ASteps%20to%20reproduce%3A%0A%0AExpected%20behaviour%3A%0A%0AActual%20behaviour%3A"
-   style="display:inline-block; background:linear-gradient(135deg,#004D40,#00796B);
-          color:white; padding:8px 18px; border-radius:6px; font-weight:700;
-          text-decoration:none; margin:4px 0;">
-   🐛 Report an Issue
-</a><br><br>
+Found a bug or display problem? Use the form below to send it directly to the WindSense team.<br><br>
 <strong>📋 Team</strong><br>
 WindSense AI — Team TG0907494<br>
 TECHgium 9th Edition<br><br>
@@ -1320,6 +1314,150 @@ TECHgium 9th Edition<br><br>
 </div>
 </details>
 """, unsafe_allow_html=True)
+# ── Report an Issue inline form ──────────────────────────────────────────
+    if 'show_report_form' not in st.session_state:
+        st.session_state.show_report_form = False
+    if 'report_sent' not in st.session_state:
+        st.session_state.report_sent = False
+
+    if st.button("🐛 Report an Issue", key="open_report_form", use_container_width=True):
+        st.session_state.show_report_form = not st.session_state.show_report_form
+        st.session_state.report_sent = False
+
+    if st.session_state.show_report_form:
+        st.markdown("""
+        <div style="background:#0D1B2A; border:1px solid #00C9B1; border-radius:10px;
+                    padding:1rem 1.2rem; margin-top:0.5rem;">
+            <p style="color:#00C9B1; font-weight:700; margin:0 0 0.5rem 0;">📝 Report an Issue</p>
+            <p style="color:#8899AA; font-size:0.78rem; margin:0 0 0.8rem 0;">
+                Your report will be sent to windsenseada@gmail.com
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
+
+        report_name = st.text_input(
+            "Your Name / Username",
+            placeholder="e.g. Aarif — Mechanical Tech",
+            key="report_name"
+        )
+        report_tab = st.selectbox(
+            "Tab where issue occurred",
+            ["Tab 1 — Real-Time Monitoring", "Tab 2 — ML Model & Training",
+             "Tab 3 — Historical Analytics", "Tab 4 — Notifications & Workflow",
+             "Tab 5 — DMAIC Analysis", "Tab 6 — Optimization & Forecasting",
+             "Tab 7 — Alarm Acknowledgment", "Tab 8 — OPC UA Live Feed",
+             "Sidebar / General", "Other"],
+            key="report_tab"
+        )
+        report_body = st.text_area(
+            "Describe the issue (max 2000 characters)",
+            placeholder="What went wrong? What did you expect to happen? Steps to reproduce...",
+            max_chars=2000,
+            height=180,
+            key="report_body"
+        )
+        char_count = len(report_body) if report_body else 0
+        st.caption(f"{char_count} / 2000 characters used")
+
+        col_send, col_cancel = st.columns([1, 1])
+        with col_send:
+            if st.button("📤 Send Report", key="send_report", type="primary", use_container_width=True):
+                if not report_name.strip():
+                    st.error("Please enter your name.")
+                elif not report_body.strip():
+                    st.error("Please describe the issue before sending.")
+                else:
+                    try:
+                        import smtplib
+                        from email.mime.text import MIMEText
+                        from email.mime.multipart import MIMEMultipart
+
+                        sender  = "windsenseada@gmail.com"
+                        subject = f"🐛 WindSense AI — Issue Report from {report_name.strip()}"
+                        html_body = f"""
+                        <html><body style="font-family:Arial,sans-serif; background:#0D1B2A; color:#E8F4FD;">
+                            <div style="background:linear-gradient(135deg,#0D1B2A,#1E3A5F);
+                                        padding:20px; border-bottom:2px solid #00C9B1;">
+                                <h2 style="color:#00C9B1; margin:0;">🐛 WindSense AI — Issue Report</h2>
+                            </div>
+                            <div style="padding:20px; background:#112233;">
+                                <table style="width:100%; border-collapse:collapse; color:#D0D8E0;">
+                                    <tr>
+                                        <td style="padding:8px 12px; background:#0D1B2A; border:1px solid #1E3A5F;
+                                                   font-weight:700; color:#00C9B1; width:35%;">Reported By</td>
+                                        <td style="padding:8px 12px; background:#0D1B2A; border:1px solid #1E3A5F;">
+                                            {report_name.strip()}
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding:8px 12px; background:#0D1B2A; border:1px solid #1E3A5F;
+                                                   font-weight:700; color:#00C9B1;">Tab / Location</td>
+                                        <td style="padding:8px 12px; background:#0D1B2A; border:1px solid #1E3A5F;">
+                                            {report_tab}
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding:8px 12px; background:#0D1B2A; border:1px solid #1E3A5F;
+                                                   font-weight:700; color:#00C9B1;">Submitted At</td>
+                                        <td style="padding:8px 12px; background:#0D1B2A; border:1px solid #1E3A5F;">
+                                            {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding:8px 12px; background:#0D1B2A; border:1px solid #1E3A5F;
+                                                   font-weight:700; color:#00C9B1;">Dashboard URL</td>
+                                        <td style="padding:8px 12px; background:#0D1B2A; border:1px solid #1E3A5F;">
+                                            windsense-ai.streamlit.app
+                                        </td>
+                                    </tr>
+                                </table>
+                                <div style="margin-top:20px; padding:15px; background:#0D1B2A;
+                                            border-left:4px solid #00C9B1; border-radius:0 8px 8px 0;">
+                                    <p style="color:#00C9B1; font-weight:700; margin:0 0 10px 0;">
+                                        Issue Description
+                                    </p>
+                                    <p style="color:#D0D8E0; white-space:pre-wrap; margin:0;">
+                                        {report_body.strip()}
+                                    </p>
+                                </div>
+                            </div>
+                            <div style="padding:12px 20px; background:#0D1B2A; text-align:center;
+                                        color:#4FC3F7; font-size:0.8rem;">
+                                WindSense AI © 2026 | Team TG0907494 | TECHgium 9th Edition
+                            </div>
+                        </body></html>
+                        """
+
+                        msg = MIMEMultipart()
+                        msg['From']    = sender
+                        msg['To']      = "windsenseada@gmail.com"
+                        msg['Subject'] = subject
+                        msg.attach(MIMEText(html_body, 'html'))
+
+                        _smtp = smtplib.SMTP('smtp.gmail.com', 587, timeout=10)
+                        _smtp.ehlo()
+                        _smtp.starttls()
+                        _smtp.login('windsenseada@gmail.com', 'oaru xyta qlwi hpmw')
+                        _smtp.sendmail(sender, "windsenseada@gmail.com", msg.as_string())
+                        _smtp.quit()
+
+                        st.session_state.report_sent        = True
+                        st.session_state.show_report_form   = False
+                        st.success(f"✅ Report sent successfully! We'll review it shortly, {report_name.strip()}.")
+                        st.balloons()
+                        st.rerun()
+
+                    except Exception as _e:
+                        st.error(f"❌ Failed to send report. Please email windsenseada@gmail.com directly. Error: {_e}")
+
+        with col_cancel:
+            if st.button("✖ Cancel", key="cancel_report", use_container_width=True):
+                st.session_state.show_report_form = False
+                st.rerun()
+
+    if st.session_state.get('report_sent', False):
+        st.success("✅ Your issue report was sent to the WindSense team.")
+        st.session_state.report_sent = False
 
 # ═══════════════════════════════════════════════════════════════════
 # MAIN TABS
