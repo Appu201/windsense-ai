@@ -71,6 +71,35 @@ st.markdown("""
 })();
 </script>
 """, unsafe_allow_html=True)
+st.markdown("""
+<script>
+(function() {
+    function hideExpanderIcons() {
+        const sidebar = document.querySelector('[data-testid="stSidebar"]');
+        if (!sidebar) return;
+        const toggleIcons = sidebar.querySelectorAll('[data-testid="stExpanderToggleIcon"]');
+        toggleIcons.forEach(el => {
+            el.style.cssText = 'display:none!important;width:0!important;height:0!important;overflow:hidden!important;font-size:0!important;';
+        });
+        const expanderHeaders = sidebar.querySelectorAll('.streamlit-expanderHeader');
+        expanderHeaders.forEach(header => {
+            const children = header.children;
+            for (let child of children) {
+                const text = child.innerText || child.textContent || '';
+                if (text.includes('arrow') || text.trim() === '' || child.querySelector('svg')) {
+                    child.style.cssText = 'display:none!important;width:0!important;font-size:0!important;';
+                }
+            }
+        });
+    }
+    setTimeout(hideExpanderIcons, 500);
+    setTimeout(hideExpanderIcons, 1500);
+    setTimeout(hideExpanderIcons, 3000);
+    const observer = new MutationObserver(hideExpanderIcons);
+    observer.observe(document.body, { childList: true, subtree: true });
+})();
+</script>
+""", unsafe_allow_html=True)
 
 # ── Master CSS block ─────────────────────────────────────────────────────────
 st.markdown("""
@@ -2162,9 +2191,10 @@ with tab8:
     fleet = st.session_state.opcua_sim.get_fleet_summary()
 
     # ── Derive true alarm count from buffer only ──
-    _true_alarm_turbines = set(str(a['asset_id']) for a in st.session_state.alarm_buffer)
-    _true_in_alarm       = len(_true_alarm_turbines) if _buffer_has_alarms else 0
-    _true_normal         = len(st.session_state.opcua_sim.turbine_ids) - _true_in_alarm
+    _total_turbines      = len(st.session_state.opcua_sim.turbine_ids)  # e.g. 5
+    _true_alarm_turbines = set(str(a['asset_id']) for a in st.session_state.alarm_buffer) if _buffer_has_alarms else set()
+    _true_in_alarm       = min(len(_true_alarm_turbines), _total_turbines)
+    _true_normal         = max(0, _total_turbines - _true_in_alarm)
 
     col1, col2, col3, col4 = st.columns(4)
     with col1: st.metric("🔋 Total Fleet Power",  f"{fleet['total_power_kw']:,.0f} kW")
@@ -2191,14 +2221,24 @@ with tab8:
         render_table(display_readings)   # ← HTML table, always visible
 
 # ── Only show alarming nodes that correspond to actual alarms in buffer ──
+    # ── Match readings to buffer by turbine_id — ignore alarm_active (unreliable) ──
     _buffer_alarm_turbines = {str(a['asset_id']) for a in st.session_state.alarm_buffer}
+    _buffer_alarm_type_map = {}
+    for _a in st.session_state.alarm_buffer:
+        _tid = str(_a['asset_id'])
+        if _tid not in _buffer_alarm_type_map:
+            _buffer_alarm_type_map[_tid] = _a['predicted_type']
+
     alarming_nodes = [
         r for r in readings
-        if r.get('alarm_active', False) and str(r.get('turbine_id', '')) in _buffer_alarm_turbines
+        if str(r.get('turbine_id', '')) in _buffer_alarm_turbines
     ]
-    if alarming_nodes:
-        st.markdown("**🚨 Active Alarm Nodes (from Alarm Buffer):**")
+
+    if alarming_nodes and _buffer_has_alarms:
+        st.markdown("**🚨 Active Alarm Nodes (linked from Alarm Buffer):**")
         for node in alarming_nodes:
+            _node_tid    = str(node.get('turbine_id', ''))
+            _alarm_label = _buffer_alarm_type_map.get(_node_tid, 'Active Alarm')
             st.markdown(f"""
             <div style="background: linear-gradient(135deg, #8B0000, #cc0000);
                         color: white; padding: 0.6rem 1rem; border-radius: 6px;
@@ -2206,7 +2246,7 @@ with tab8:
                 <strong>{node.get('node_id', 'Unknown')}</strong> —
                 {node.get('description', '')} |
                 Value: {node.get('value', 'N/A')} {node.get('unit', '')} |
-                Status: {node.get('status', 'N/A')}
+                Alarm: <strong>{_alarm_label}</strong>
             </div>
             """, unsafe_allow_html=True)
     else:
