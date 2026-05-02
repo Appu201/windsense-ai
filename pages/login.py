@@ -423,7 +423,22 @@ st.divider()
 # ═════════════════════════════════════════════════════════════════════════════
 # MAIN TABS — Sign In | Sign Up
 # ═════════════════════════════════════════════════════════════════════════════
-tab_signin, tab_signup = st.tabs(["🔑  Sign In", "📋  Sign Up"])
+st.markdown("""
+    <style>
+    .stTabs [data-baseweb="tab-list"] {
+        display: flex !important;
+        width: 100% !important;
+        gap: 0 !important;
+    }
+    .stTabs [data-baseweb="tab"] {
+        flex: 1 !important;
+        justify-content: center !important;
+        text-align: center !important;
+        border-radius: 8px 8px 0 0 !important;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+    tab_signin, tab_signup = st.tabs(["🔑  Sign In", "📋  Sign Up"])
 
 # ─────────────────────────────────────────────────────────────────────────────
 # TAB 1 — SIGN IN
@@ -462,14 +477,7 @@ with tab_signin:
     st.divider()
 
     # ── Forgot Password ───────────────────────────────────────────────────────
-    st.markdown("""
-    <details class="ws-help-details" style="margin-top:0.3rem;">
-    <summary>🔒 Forgot Password?</summary>
-    </details>
-    """, unsafe_allow_html=True)
-
-    # Use Streamlit widgets below the fake expander header
-    with st.expander("", expanded=False):
+    with st.expander("🔒 Forgot Password?", expanded=False):
         st.markdown("<p style='color:#00C9B1; font-weight:700;'>Reset Your Password</p>", unsafe_allow_html=True)
         st.markdown("<p style='color:#8899AA; font-size:0.82rem;'>Enter your registered email address. If found, a temporary password will be sent to you.</p>", unsafe_allow_html=True)
 
@@ -786,7 +794,6 @@ with tab_signup:
                         A confirmation email has been sent to {email_addr.strip()}.
                         You can now sign in using username: **{clean_username}**
                         """)
-                        st.balloons()
                     else:
                         st.error("❌ Failed to save account. Check that the `data/` folder exists and is writable.")
 
