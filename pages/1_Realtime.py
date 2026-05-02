@@ -77,25 +77,54 @@ st.markdown("""
     function hideExpanderIcons() {
         const sidebar = document.querySelector('[data-testid="stSidebar"]');
         if (!sidebar) return;
-        const toggleIcons = sidebar.querySelectorAll('[data-testid="stExpanderToggleIcon"]');
-        toggleIcons.forEach(el => {
-            el.style.cssText = 'display:none!important;width:0!important;height:0!important;overflow:hidden!important;font-size:0!important;';
+
+        // Step 1: Target by data-testid — clear text AND hide
+        sidebar.querySelectorAll('[data-testid="stExpanderToggleIcon"]').forEach(el => {
+            el.textContent = '';
+            el.innerHTML = '';
+            el.style.cssText = 'display:none!important;width:0!important;height:0!important;overflow:hidden!important;font-size:0!important;color:transparent!important;position:absolute!important;';
         });
-        const expanderHeaders = sidebar.querySelectorAll('.streamlit-expanderHeader');
-        expanderHeaders.forEach(header => {
-            const children = header.children;
-            for (let child of children) {
-                const text = child.innerText || child.textContent || '';
-                if (text.includes('arrow') || text.trim() === '' || child.querySelector('svg')) {
-                    child.style.cssText = 'display:none!important;width:0!important;font-size:0!important;';
+
+        // Step 2: Target summary first child — if it contains "arrow" text, nuke it
+        sidebar.querySelectorAll('details > summary').forEach(summary => {
+            Array.from(summary.children).forEach(child => {
+                const raw = (child.textContent || child.innerText || '');
+                if (raw.toLowerCase().includes('arrow') || raw.includes('expand') || raw.includes('chevron')) {
+                    child.textContent = '';
+                    child.innerHTML = '';
+                    child.style.cssText = 'display:none!important;width:0!important;height:0!important;font-size:0!important;color:transparent!important;position:absolute!important;';
                 }
-            }
+            });
+        });
+
+        // Step 3: Target expander header — hide first child div that is NOT the label
+        sidebar.querySelectorAll('.streamlit-expanderHeader').forEach(header => {
+            Array.from(header.children).forEach((child, idx) => {
+                const raw = (child.textContent || child.innerText || '').trim();
+                // If child text is short (icon text) or contains arrow keyword
+                if (raw.toLowerCase().includes('arrow') || raw === '' || (raw.length < 15 && !raw.includes(' '))) {
+                    child.textContent = '';
+                    child.innerHTML = '';
+                    child.style.cssText = 'display:none!important;width:0!important;font-size:0!important;color:transparent!important;';
+                }
+            });
         });
     }
-    setTimeout(hideExpanderIcons, 500);
+
+    // Run immediately and at intervals to catch Streamlit re-renders
+    hideExpanderIcons();
+    setTimeout(hideExpanderIcons, 300);
+    setTimeout(hideExpanderIcons, 800);
     setTimeout(hideExpanderIcons, 1500);
     setTimeout(hideExpanderIcons, 3000);
-    const observer = new MutationObserver(hideExpanderIcons);
+    setTimeout(hideExpanderIcons, 5000);
+
+    // Watch DOM — use a debounce to avoid infinite loops
+    let _timer = null;
+    const observer = new MutationObserver(() => {
+        clearTimeout(_timer);
+        _timer = setTimeout(hideExpanderIcons, 100);
+    });
     observer.observe(document.body, { childList: true, subtree: true });
 })();
 </script>
@@ -2221,7 +2250,9 @@ with tab8:
         render_table(display_readings)   # ← HTML table, always visible
 
 # ── Only show alarming nodes that correspond to actual alarms in buffer ──
-    # ── Match readings to buffer by turbine_id — ignore alarm_active (unreliable) ──
+    import re as _re
+
+    # ── Build buffer lookup: turbine ID string → alarm type ──
     _buffer_alarm_turbines = {str(a['asset_id']) for a in st.session_state.alarm_buffer}
     _buffer_alarm_type_map = {}
     for _a in st.session_state.alarm_buffer:
@@ -2229,15 +2260,27 @@ with tab8:
         if _tid not in _buffer_alarm_type_map:
             _buffer_alarm_type_map[_tid] = _a['predicted_type']
 
+    def _extract_turbine_from_node(node):
+        """Parse turbine number from node_id like WindFarm.Turbine21.AlarmActive → '21'"""
+        for field in ['turbine_id', 'asset_id']:
+            val = node.get(field)
+            if val is not None:
+                return str(val)
+        node_id_str = str(node.get('node_id', ''))
+        m = _re.search(r'[Tt]urbine(\d+)', node_id_str)
+        if m:
+            return m.group(1)
+        return ''
+
     alarming_nodes = [
         r for r in readings
-        if str(r.get('turbine_id', '')) in _buffer_alarm_turbines
-    ]
+        if _extract_turbine_from_node(r) in _buffer_alarm_turbines
+    ] if _buffer_has_alarms else []
 
-    if alarming_nodes and _buffer_has_alarms:
+    if alarming_nodes:
         st.markdown("**🚨 Active Alarm Nodes (linked from Alarm Buffer):**")
         for node in alarming_nodes:
-            _node_tid    = str(node.get('turbine_id', ''))
+            _node_tid    = _extract_turbine_from_node(node)
             _alarm_label = _buffer_alarm_type_map.get(_node_tid, 'Active Alarm')
             st.markdown(f"""
             <div style="background: linear-gradient(135deg, #8B0000, #cc0000);
