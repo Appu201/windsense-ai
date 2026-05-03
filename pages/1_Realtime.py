@@ -2521,10 +2521,22 @@ with tab8:
             return m.group(1)
         return ''
 
-    alarming_nodes = [
-        r for r in readings
-        if _extract_turbine_from_node(r) in _buffer_alarm_turbines
-    ] if _buffer_has_alarms else []
+   # FIXED — one row per alarm, not per node
+alarming_nodes = []
+_seen_alarm_ids = set()
+for _a in st.session_state.alarm_buffer:
+    _aid = _a.get('alarm_id')
+    if _aid in _seen_alarm_ids:
+        continue
+    _seen_alarm_ids.add(_aid)
+    alarming_nodes.append({
+        'node_id':     f"ns=2;s=WindFarm.Turbine{_a['asset_id']}.AlarmActive",
+        'description': f"Turbine {_a['asset_id']} — Alarm Active Flag",
+        'value':       'True',
+        'unit':        '',
+        'alarm_type':  _a.get('predicted_type', 'Unknown'),
+        'asset_id':    str(_a['asset_id'])
+    })if _buffer_has_alarms else []
 
     if alarming_nodes:
         st.markdown("**🚨 Active Alarm Nodes (linked from Alarm Buffer):**")
