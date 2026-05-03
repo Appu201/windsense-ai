@@ -2458,8 +2458,8 @@ with tab8:
     if _buffer_has_alarms:
         for alarm in st.session_state.alarm_buffer[:5]:
             turbine_id = alarm['asset_id']
-            if turbine_id in st.session_state.opcua_sim.turbine_ids:
-                st.session_state.opcua_sim.active_alarms[turbine_id] = alarm['predicted_type']
+            if int(turbine_id) in [int(t) for t in st.session_state.opcua_sim.turbine_ids]:
+                st.session_state.opcua_sim.active_alarms[int(turbine_id)] = alarm['predicted_type']
     else:
         # Clear all simulator-internal alarm states when buffer is empty
         st.session_state.opcua_sim.active_alarms = {}
