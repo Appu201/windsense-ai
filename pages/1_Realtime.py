@@ -812,21 +812,52 @@ def check_and_escalate():
 def load_ml_model():
     try:
         import gzip
+        # Load RF (primary)
         model_gz  = MODEL_PATH + 'windsense_rf_model.pkl.gz'
         model_pkl = MODEL_PATH + 'windsense_rf_model.pkl'
         if os.path.exists(model_gz):
             with gzip.open(model_gz, 'rb') as f:
-                model = pickle.load(f)
+                rf_model = pickle.load(f)
         elif os.path.exists(model_pkl):
             with open(model_pkl, 'rb') as f:
-                model = pickle.load(f)
+                rf_model = pickle.load(f)
         else:
             return None, None, None
+
+        # Load Extra Trees
+        et_path = MODEL_PATH + 'windsense_et_model.pkl'
+        et_model = None
+        if os.path.exists(et_path):
+            with open(et_path, 'rb') as f:
+                et_model = pickle.load(f)
+
+        # Load XGBoost
+        xgb_path = MODEL_PATH + 'windsense_xgb_model.pkl'
+        xgb_model = None
+        if os.path.exists(xgb_path):
+            with open(xgb_path, 'rb') as f:
+                xgb_model = pickle.load(f)
+
+        # Load Label Encoder (for XGBoost)
+        le_path = MODEL_PATH + 'windsense_label_encoder.pkl'
+        le = None
+        if os.path.exists(le_path):
+            with open(le_path, 'rb') as f:
+                le = pickle.load(f)
+
         with open(MODEL_PATH + 'feature_names.pkl', 'rb') as f:
             features = pickle.load(f)
         with open(MODEL_PATH + 'model_metadata.json', 'r') as f:
             metadata = json.load(f)
-        return model, features, metadata
+
+        # Bundle all models together — passed as tuple in place of single model
+        model_bundle = {
+            'rf': rf_model,
+            'et': et_model,
+            'xgb': xgb_model,
+            'le': le
+        }
+        return model_bundle, features, metadata
     except Exception:
         return None, None, None
 
@@ -1002,42 +1033,52 @@ if 'iso_detector' not in st.session_state:
 st.session_state.anomaly_detector = st.session_state.iso_detector
 
 def predict_alarm_type(alarm_data, model, features):
+    # model is now a dict bundle: {'rf', 'et', 'xgb', 'le'}
+    # Fallback if no model loaded
     if model is None:
         status = alarm_data.get('status_type_id', 5.0)
         if status == 5.0:   return 'Grid Frequency Deviation', 92.5
         elif status == 4.0: return 'Emergency Brake Activation', 88.3
         else:               return 'Hydraulic Pressure Drop', 85.7
+
     try:
+        # ── Build feature vector (same as before) ───────────────────────────
         ts_raw = alarm_data.get('timestamp', datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
         try:
             ts = datetime.strptime(str(ts_raw), '%Y-%m-%d %H:%M:%S')
         except Exception:
             ts = datetime.now()
+
         duration_hours   = float(alarm_data.get('duration_hours', np.random.uniform(0.5, 5.0)))
         duration_minutes = duration_hours * 60
         duration_log     = float(np.log1p(duration_hours))
         is_long   = 1 if duration_hours >= 5   else 0
         is_short  = 1 if duration_hours < 2    else 0
         is_medium = 1 if 2 <= duration_hours < 5 else 0
+
         hour_of_day  = ts.hour
         day_of_week  = ts.weekday()
         month        = ts.month
         season = 0 if month in [12,1,2] else 1 if month in [3,4,5] else 2 if month in [6,7,8] else 3
         is_weekend    = 1 if day_of_week >= 5 else 0
         is_peak_hours = 1 if 8 <= hour_of_day <= 20 else 0
+
         asset_id = alarm_data.get('asset_id', 10)
         try:
             turbine_id_num = int(asset_id) if str(asset_id).isdigit() else 10
         except Exception:
             turbine_id_num = 10
+
         status_type_id  = float(alarm_data.get('status_type_id', 5.0))
         status_type_num = int(status_type_id)
         is_status_5 = 1 if status_type_id == 5.0 else 0
         is_status_4 = 1 if status_type_id == 4.0 else 0
         is_status_3 = 1 if status_type_id == 3.0 else 0
+
         turbine_alarm_frequency = float(alarm_data.get('turbine_alarm_frequency', 100.0))
         turbine_avg_duration    = float(alarm_data.get('turbine_avg_duration', 3.0))
         duration_rank           = float(alarm_data.get('duration_rank', 0.5))
+
         feature_vector = [
             duration_hours, duration_minutes, duration_log,
             is_long, is_short, is_medium,
@@ -1047,11 +1088,46 @@ def predict_alarm_type(alarm_data, model, features):
             is_status_5, is_status_4, is_status_3,
             turbine_alarm_frequency, turbine_avg_duration, duration_rank
         ]
-        X             = np.array([feature_vector])
-        prediction    = model.predict(X)[0]
-        probabilities = model.predict_proba(X)[0]
-        confidence    = max(probabilities) * 100
-        return prediction, confidence
+        X = np.array([feature_vector])
+
+        # ── Get predictions from each available model ────────────────────────
+        rf    = model.get('rf')
+        et    = model.get('et')
+        xgb   = model.get('xgb')
+        le    = model.get('le')
+
+        votes = []
+        confidence_scores = []
+
+        if rf is not None:
+            rf_pred  = rf.predict(X)[0]
+            rf_proba = max(rf.predict_proba(X)[0]) * 100
+            votes.append(rf_pred)
+            confidence_scores.append(rf_proba)
+
+        if et is not None:
+            et_pred  = et.predict(X)[0]
+            et_proba = max(et.predict_proba(X)[0]) * 100
+            votes.append(et_pred)
+            confidence_scores.append(et_proba)
+
+        if xgb is not None and le is not None:
+            xgb_enc  = xgb.predict(X)[0]
+            xgb_pred = le.inverse_transform([xgb_enc])[0]
+            xgb_proba = max(xgb.predict_proba(X)[0]) * 100
+            votes.append(xgb_pred)
+            confidence_scores.append(xgb_proba)
+
+        # ── Majority vote ────────────────────────────────────────────────────
+        if not votes:
+            return 'Grid Frequency Deviation', 88.0
+
+        from collections import Counter
+        final_prediction = Counter(votes).most_common(1)[0][0]
+        avg_confidence   = float(np.mean(confidence_scores))
+
+        return final_prediction, avg_confidence
+
     except Exception:
         status = alarm_data.get('status_type_id', 5.0)
         if status == 5.0:   return 'Grid Frequency Deviation', 88.0
@@ -1803,7 +1879,8 @@ with tab2:
     with col2:
         if ml_model and feature_names:
             st.subheader("🔍 Top 10 Feature Importance")
-            importances    = ml_model.feature_importances_
+            _rf_for_plot = ml_model.get('rf') if isinstance(ml_model, dict) else ml_model
+            importances  = _rf_for_plot.feature_importances_  # ← FIXED
             feature_imp_df = pd.DataFrame({'Feature': feature_names, 'Importance': importances}) \
                               .sort_values('Importance', ascending=False).head(10)
             fig = px.bar(
