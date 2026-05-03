@@ -1,3 +1,4 @@
+import re
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -374,10 +375,8 @@ def format_alarm_id(alarm_id: str) -> str:
         if s_part.startswith("s="):
             s_part = s_part[2:]     # strip 's='
         # Remove trailing numeric ID (e.g. -1774961438)
-        import re
         s_part = re.sub(r'-\d{7,}$', '', s_part)
         return f"{ns_part} | {s_part}"
-        return raw
 
 # ── Helper: render a DataFrame as a visible HTML table ───────────────────────
 def render_table(df: pd.DataFrame, max_rows: int = 200) -> None:
@@ -2499,7 +2498,6 @@ with tab8:
         render_table(display_readings)   # ← HTML table, always visible
 
 # ── Only show alarming nodes that correspond to actual alarms in buffer ──
-    import re as _re
 
     # ── Build buffer lookup: turbine ID string → alarm type ──
     _buffer_alarm_turbines = {str(a['asset_id']) for a in st.session_state.alarm_buffer}
@@ -2516,51 +2514,51 @@ with tab8:
             if val is not None:
                 return str(val)
         node_id_str = str(node.get('node_id', ''))
-        m = _re.search(r'[Tt]urbine(\d+)', node_id_str)
+        m = re.search(r'[Tt]urbine(\d+)', node_id_str)
         if m:
             return m.group(1)
         return ''
 
-   # ── One alarm node row per unique turbine — pick most critical alarm per turbine ──
-alarming_nodes = []
-if _buffer_has_alarms:
-    _priority_rank = {'CRITICAL': 3, 'HIGH': 2, 'MEDIUM': 1}
-    _turbine_best  = {}   # asset_id → best alarm dict
-    for _a in st.session_state.alarm_buffer:
-        _tid  = str(_a['asset_id'])
-        _rank = _priority_rank.get(_a.get('priority', 'MEDIUM'), 0)
-        if _tid not in _turbine_best or _rank > _priority_rank.get(_turbine_best[_tid].get('priority', 'MEDIUM'), 0):
-            _turbine_best[_tid] = _a
-    for _tid, _a in sorted(_turbine_best.items()):
-        alarming_nodes.append({
-            'node_id':     f"ns=2;s=WindFarm.Turbine{_a['asset_id']}.AlarmActive",
-            'description': f"Turbine {_a['asset_id']} — Alarm Active Flag",
-            'value':       'True',
-            'unit':        '',
-            'alarm_type':  _a.get('predicted_type', 'Unknown'),
-            'priority':    _a.get('priority', 'N/A'),
-            'asset_id':    _tid
-        })
+# ── One alarm node row per unique turbine — pick most critical alarm per turbine ──
+    alarming_nodes = []
+    if _buffer_has_alarms:
+        _priority_rank = {'CRITICAL': 3, 'HIGH': 2, 'MEDIUM': 1}
+        _turbine_best  = {}   # asset_id → best alarm dict
+        for _a in st.session_state.alarm_buffer:
+            _tid  = str(_a['asset_id'])
+            _rank = _priority_rank.get(_a.get('priority', 'MEDIUM'), 0)
+            if _tid not in _turbine_best or _rank > _priority_rank.get(_turbine_best[_tid].get('priority', 'MEDIUM'), 0):
+                _turbine_best[_tid] = _a
+        for _tid, _a in sorted(_turbine_best.items()):
+            alarming_nodes.append({
+                'node_id':     f"ns=2;s=WindFarm.Turbine{_a['asset_id']}.AlarmActive",
+                'description': f"Turbine {_a['asset_id']} — Alarm Active Flag",
+                'value':       'True',
+                'unit':        '',
+                'alarm_type':  _a.get('predicted_type', 'Unknown'),
+                'priority':    _a.get('priority', 'N/A'),
+                'asset_id':    _tid
+            })
 
     if alarming_nodes:
-    st.markdown("**🚨 Active Alarm Nodes (one per turbine — highest priority shown):**")
-    for node in alarming_nodes:
-        _alarm_label = node.get('alarm_type', 'Active Alarm')
-        _priority    = node.get('priority', '')
-        _color       = '#ff4444' if _priority == 'CRITICAL' else '#ff8800' if _priority == 'HIGH' else '#ffbb33'
-        st.markdown(f"""
-        <div style="background: linear-gradient(135deg, #1a0a00, #2a1200);
-                    color: white; padding: 0.6rem 1rem; border-radius: 6px;
-                    border-left: 4px solid {_color}; margin: 0.3rem 0;">
-            <strong>{node.get('node_id', 'Unknown')}</strong> —
-            {node.get('description', '')} |
-            Value: {node.get('value', 'N/A')} |
-            Priority: <strong style="color:{_color};">{_priority}</strong> |
-            Alarm: <strong>{_alarm_label}</strong>
-        </div>
-        """, unsafe_allow_html=True)
-else:
-    st.success("✅ All OPC UA nodes operating normally")
+        st.markdown("**🚨 Active Alarm Nodes (one per turbine — highest priority shown):**")
+        for node in alarming_nodes:
+            _alarm_label = node.get('alarm_type', 'Active Alarm')
+            _priority    = node.get('priority', '')
+            _color       = '#ff4444' if _priority == 'CRITICAL' else '#ff8800' if _priority == 'HIGH' else '#ffbb33'
+            st.markdown(f"""
+            <div style="background: linear-gradient(135deg, #1a0a00, #2a1200);
+                        color: white; padding: 0.6rem 1rem; border-radius: 6px;
+                        border-left: 4px solid {_color}; margin: 0.3rem 0;">
+                <strong>{node.get('node_id', 'Unknown')}</strong> —
+                {node.get('description', '')} |
+                Value: {node.get('value', 'N/A')} |
+                Priority: <strong style="color:{_color};">{_priority}</strong> |
+                Alarm: <strong>{_alarm_label}</strong>
+            </div>
+            """, unsafe_allow_html=True)
+    else:
+        st.success("✅ All OPC UA nodes operating normally")
 
     st.divider()
     col_r1, col_r2, col_r3 = st.columns([1, 2, 1])
