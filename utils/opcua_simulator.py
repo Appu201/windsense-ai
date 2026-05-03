@@ -52,13 +52,17 @@ class OPCUASimulator:
     Simulates a live OPC UA data stream from wind turbine SCADA.
     Generates realistic sensor readings with natural variation,
     occasional anomalies, and simulated alarm conditions.
+
+    IMPORTANT: active_alarms is now controlled EXCLUSIVELY by app.py
+    (injected from the alarm buffer). The simulator NEVER auto-generates
+    or auto-clears alarms — that is the app's responsibility.
     """
 
     def __init__(self):
         self.turbine_ids = [0, 10, 11, 13, 21]
         self.base_wind_speed = 8.5
         self.tick_count = 0
-        self.active_alarms = {}
+        self.active_alarms = {}   # Controlled externally by app.py only
 
         # Base operating conditions per turbine
         self.turbine_profiles = {
@@ -73,204 +77,169 @@ class OPCUASimulator:
         """Add realistic sensor noise — ±3% by default."""
         return base_value * (1 + random.uniform(-noise_pct, noise_pct))
 
-    def _simulate_alarm_condition(self, turbine_id):
-        """Randomly inject alarm conditions with low probability."""
-        if random.random() < 0.05:
-            alarm_types = [
-                "Grid Frequency Deviation",
-                "Momentary Grid Loss",
-                "Grid Voltage Fluctuation",
-                "Emergency Brake Activation",
-                "Overspeed Protection Triggered"
-            ]
-            return random.choice(alarm_types)
-        return None
-
     def get_current_readings(self):
         """
         Generate a complete snapshot of all OPC UA nodes.
-        Returns a list of dicts representing OPC UA data points.
+        Alarm status is driven EXCLUSIVELY by self.active_alarms,
+        which is set by app.py from the alarm buffer.
+        No internal random alarm generation or auto-recovery logic.
         """
         self.tick_count += 1
         timestamp = datetime.now()
         readings = []
 
-        # Simulate grid conditions
-        grid_freq = self._add_noise(50.0, 0.005)
+        # ── Grid conditions ──────────────────────────────────────────────────
+        grid_freq    = self._add_noise(50.0, 0.005)
         grid_voltage = self._add_noise(690, 0.02)
-        grid_ok = grid_freq > 49.5 and grid_freq < 50.5 and grid_voltage > 650
+        grid_ok      = 49.5 < grid_freq < 50.5 and grid_voltage > 650
 
         readings.append({
-            "node_id": "ns=2;s=WindFarm.Grid.Frequency",
+            "node_id":     "ns=2;s=WindFarm.Grid.Frequency",
             "description": "Grid — Frequency (Hz)",
-            "value": round(grid_freq, 4),
-            "unit": "Hz",
-            "quality": "Good",
-            "timestamp": timestamp.strftime('%Y-%m-%d %H:%M:%S'),
-            "status": "NORMAL" if grid_ok else "ALARM"
+            "value":       round(grid_freq, 4),
+            "unit":        "Hz",
+            "quality":     "Good",
+            "timestamp":   timestamp.strftime('%Y-%m-%d %H:%M:%S'),
+            "status":      "NORMAL" if grid_ok else "ALARM"
         })
 
         readings.append({
-            "node_id": "ns=2;s=WindFarm.Grid.Voltage",
+            "node_id":     "ns=2;s=WindFarm.Grid.Voltage",
             "description": "Grid — Voltage (V)",
-            "value": round(grid_voltage, 2),
-            "unit": "V",
-            "quality": "Good",
-            "timestamp": timestamp.isoformat(),
-            "status": "NORMAL" if grid_ok else "ALARM"
+            "value":       round(grid_voltage, 2),
+            "unit":        "V",
+            "quality":     "Good",
+            "timestamp":   timestamp.isoformat(),
+            "status":      "NORMAL" if grid_ok else "ALARM"
         })
 
-        # Wind speed
+        # ── Wind speed (fleet-wide with per-turbine jitter) ──────────────────
         wind_speed = max(3.0, self._add_noise(self.base_wind_speed, 0.08))
 
-        # Per-turbine readings
+        # ── Per-turbine readings ─────────────────────────────────────────────
         for turbine_id in self.turbine_ids:
             profile = self.turbine_profiles[turbine_id]
 
-            alarm_condition = self._simulate_alarm_condition(turbine_id)
-            has_alarm = alarm_condition is not None
-
-            if has_alarm:
-                self.active_alarms[turbine_id] = alarm_condition
-                power_output = self._add_noise(profile["power_base"] * 0.1, 0.2)
-                turbine_status = "ALARM"
-            elif turbine_id in self.active_alarms and random.random() < 0.3:
-                del self.active_alarms[turbine_id]
-                power_output = self._add_noise(profile["power_base"], 0.05)
-                turbine_status = "RECOVERING"
-            elif turbine_id in self.active_alarms:
-                power_output = self._add_noise(profile["power_base"] * 0.1, 0.2)
+            # ── FIXED: Status driven ONLY by active_alarms (set by app.py) ──
+            # No random alarm generation. No auto-recovery. App controls state.
+            if turbine_id in self.active_alarms:
                 turbine_status = "ALARM"
                 alarm_condition = self.active_alarms[turbine_id]
+                # Alarm turbines show low power output
+                power_output = self._add_noise(profile["power_base"] * 0.1, 0.15)
+                temp_factor  = 1.15   # elevated temperatures during alarm
             else:
-                power_output = self._add_noise(profile["power_base"], 0.05)
-                turbine_status = "NORMAL"
+                turbine_status  = "NORMAL"
+                alarm_condition = None
+                power_output    = self._add_noise(profile["power_base"], 0.05)
+                temp_factor     = 1.0
 
-            temp_factor = 1.15 if turbine_status == "ALARM" else 1.0
-            gearbox_temp = self._add_noise(profile["gearbox_temp_base"] * temp_factor, 0.02)
-            gen_temp = self._add_noise(profile["gen_temp_base"] * temp_factor, 0.02)
-            hydraulic_temp = self._add_noise(profile["hydraulic_temp_base"] * temp_factor, 0.03)
+            gearbox_temp   = self._add_noise(profile["gearbox_temp_base"]   * temp_factor, 0.02)
+            gen_temp       = self._add_noise(profile["gen_temp_base"]        * temp_factor, 0.02)
+            hydraulic_temp = self._add_noise(profile["hydraulic_temp_base"]  * temp_factor, 0.03)
 
             readings.append({
-                "node_id": f"ns=2;s=WindFarm.Turbine{turbine_id}.Status",
+                "node_id":     f"ns=2;s=WindFarm.Turbine{turbine_id}.Status",
                 "description": f"Turbine {turbine_id} — Operational Status",
-                "value": turbine_status,
-                "unit": "",
-                "quality": "Good",
-                "timestamp": timestamp.isoformat(),
-                "status": turbine_status,
+                "value":       turbine_status,
+                "unit":        "",
+                "quality":     "Good",
+                "timestamp":   timestamp.isoformat(),
+                "status":      turbine_status,
                 "alarm_active": turbine_id in self.active_alarms
             })
 
             readings.append({
-                "node_id": f"ns=2;s=WindFarm.Turbine{turbine_id}.PowerOutput",
+                "node_id":     f"ns=2;s=WindFarm.Turbine{turbine_id}.PowerOutput",
                 "description": f"Turbine {turbine_id} — Active Power (kW)",
-                "value": round(power_output, 2),
-                "unit": "kW",
-                "quality": "Good",
-                "timestamp": timestamp.isoformat(),
-                "status": turbine_status
+                "value":       round(power_output, 2),
+                "unit":        "kW",
+                "quality":     "Good",
+                "timestamp":   timestamp.isoformat(),
+                "status":      turbine_status
             })
 
             readings.append({
-                "node_id": f"ns=2;s=WindFarm.Turbine{turbine_id}.WindSpeed",
+                "node_id":     f"ns=2;s=WindFarm.Turbine{turbine_id}.WindSpeed",
                 "description": f"Turbine {turbine_id} — Wind Speed (m/s)",
-                "value": round(wind_speed + random.uniform(-0.3, 0.3), 2),
-                "unit": "m/s",
-                "quality": "Good",
-                "timestamp": timestamp.isoformat(),
-                "status": "NORMAL"
+                "value":       round(wind_speed + random.uniform(-0.3, 0.3), 2),
+                "unit":        "m/s",
+                "quality":     "Good",
+                "timestamp":   timestamp.isoformat(),
+                "status":      "NORMAL"
             })
 
             readings.append({
-                "node_id": f"ns=2;s=WindFarm.Turbine{turbine_id}.GearboxTemp",
+                "node_id":     f"ns=2;s=WindFarm.Turbine{turbine_id}.GearboxTemp",
                 "description": f"Turbine {turbine_id} — Gearbox Bearing Temp (°C)",
-                "value": round(gearbox_temp, 2),
-                "unit": "°C",
-                "quality": "Good",
-                "timestamp": timestamp.isoformat(),
-                "status": "ALARM" if gearbox_temp > 75 else "NORMAL"
+                "value":       round(gearbox_temp, 2),
+                "unit":        "°C",
+                "quality":     "Good",
+                "timestamp":   timestamp.isoformat(),
+                "status":      "ALARM" if gearbox_temp > 75 else "NORMAL"
             })
 
             readings.append({
-                "node_id": f"ns=2;s=WindFarm.Turbine{turbine_id}.GeneratorTemp",
+                "node_id":     f"ns=2;s=WindFarm.Turbine{turbine_id}.GeneratorTemp",
                 "description": f"Turbine {turbine_id} — Generator Bearing Temp (°C)",
-                "value": round(gen_temp, 2),
-                "unit": "°C",
-                "quality": "Good",
-                "timestamp": timestamp.isoformat(),
-                "status": "ALARM" if gen_temp > 80 else "NORMAL"
+                "value":       round(gen_temp, 2),
+                "unit":        "°C",
+                "quality":     "Good",
+                "timestamp":   timestamp.isoformat(),
+                "status":      "ALARM" if gen_temp > 80 else "NORMAL"
             })
 
             readings.append({
-                "node_id": f"ns=2;s=WindFarm.Turbine{turbine_id}.HydraulicTemp",
+                "node_id":     f"ns=2;s=WindFarm.Turbine{turbine_id}.HydraulicTemp",
                 "description": f"Turbine {turbine_id} — Hydraulic Oil Temp (°C)",
-                "value": round(hydraulic_temp, 2),
-                "unit": "°C",
-                "quality": "Good",
-                "timestamp": timestamp.isoformat(),
-                "status": "ALARM" if hydraulic_temp > 65 else "NORMAL"
+                "value":       round(hydraulic_temp, 2),
+                "unit":        "°C",
+                "quality":     "Good",
+                "timestamp":   timestamp.isoformat(),
+                "status":      "ALARM" if hydraulic_temp > 65 else "NORMAL"
             })
 
             readings.append({
-                "node_id": f"ns=2;s=WindFarm.Turbine{turbine_id}.AlarmActive",
+                "node_id":     f"ns=2;s=WindFarm.Turbine{turbine_id}.AlarmActive",
                 "description": f"Turbine {turbine_id} — Alarm Active Flag",
-                "value": turbine_id in self.active_alarms,
-                "unit": "",
-                "quality": "Good",
-                "timestamp": timestamp.isoformat(),
-                "status": "ALARM" if turbine_id in self.active_alarms else "NORMAL",
-                "alarm_type": self.active_alarms.get(turbine_id, None)
+                "value":       turbine_id in self.active_alarms,
+                "unit":        "",
+                "quality":     "Good",
+                "timestamp":   timestamp.isoformat(),
+                "status":      "ALARM" if turbine_id in self.active_alarms else "NORMAL",
+                "alarm_type":  self.active_alarms.get(turbine_id, None)
             })
 
-        # ── ADDED: Attach default anomaly fields to every reading ──
+        # ── Default anomaly fields on every reading ──────────────────────────
         for r in readings:
             if 'anomaly_score' not in r:
                 r['anomaly_score'] = round(random.uniform(0.0, 0.15), 3)
             if 'is_anomaly' not in r:
                 r['is_anomaly'] = False
 
-        # ── UPDATED: Inject a simulated anomaly occasionally for demo purposes ──
-        # Prefer temperature/pressure/bearing nodes for anomaly injection
-        if readings and random.randint(1, 8) == 1:
-            temp_pressure_indices = [
-                i for i, r in enumerate(readings)
-                if any(kw in str(r.get('node_id', '')).lower()
-                       for kw in ['temp', 'pressure', 'bearing', 'hydraulic', 'generator'])
-            ]
-            anomaly_idx = (
-                random.choice(temp_pressure_indices)
-                if temp_pressure_indices
-                else random.randint(0, len(readings) - 1)
-            )
-            readings[anomaly_idx]['anomaly_score'] = round(random.uniform(0.65, 0.95), 3)
-            readings[anomaly_idx]['is_anomaly'] = True
-            readings[anomaly_idx]['alarm_active'] = True
-            readings[anomaly_idx]['status'] = 'ANOMALY DETECTED'
-
         return readings
 
     def get_fleet_summary(self):
         """Return high-level fleet status summary."""
-        readings = self.get_current_readings()
-        df = pd.DataFrame(readings)
-
-        total_power = df[df['unit'] == 'kW']['value'].sum()
-        alarm_count = len(self.active_alarms)
+        readings     = self.get_current_readings()
+        df           = pd.DataFrame(readings)
+        total_power  = df[df['unit'] == 'kW']['value'].sum()
+        alarm_count  = len(self.active_alarms)
         normal_count = len(self.turbine_ids) - alarm_count
 
         return {
-            "timestamp": datetime.now().isoformat(),
-            "total_power_kw": round(total_power, 2),
-            "turbines_normal": normal_count,
-            "turbines_in_alarm": alarm_count,
-            "active_alarm_types": list(self.active_alarms.values()),
-            "grid_frequency_hz": round(
+            "timestamp":           datetime.now().isoformat(),
+            "total_power_kw":      round(total_power, 2),
+            "turbines_normal":     normal_count,
+            "turbines_in_alarm":   alarm_count,
+            "active_alarm_types":  list(self.active_alarms.values()),
+            "grid_frequency_hz":   round(
                 next((r['value'] for r in readings if 'Frequency' in r['description']), 50.0), 4
             )
         }
 
-# ── NEW: Functional approach (Person B — Phase 3 clean version) ──
+
+# ── Functional helpers (Phase 3 clean version) ───────────────────────────────
 
 TURBINES = [
     {'id': 10, 'label': 'Turbine 10', 'location': 'North Array'},
@@ -281,38 +250,44 @@ TURBINES = [
 
 GRID_FREQUENCY_BASE = 50.0
 
+
 def _normal_val(base, pct_noise=0.03):
     return round(base * (1 + random.uniform(-pct_noise, pct_noise)), 4)
+
 
 def _temp_val(base, pct_noise=0.05):
     return round(base * (1 + random.uniform(-pct_noise, pct_noise)), 2)
 
+
 def get_fleet_summary(readings):
-    total_power = sum(r['power_kw'] for r in readings if r['status'] == 'NORMAL')
-    turbines_normal = sum(1 for r in readings if r['status'] == 'NORMAL')
-    turbines_alarm = sum(1 for r in readings if r['status'] in ('ALARM', 'ANOMALY DETECTED'))
-    grid_freq = _normal_val(GRID_FREQUENCY_BASE, 0.005)
+    total_power      = sum(r['power_kw'] for r in readings if r['status'] == 'NORMAL')
+    turbines_normal  = sum(1 for r in readings if r['status'] == 'NORMAL')
+    turbines_alarm   = sum(1 for r in readings if r['status'] in ('ALARM', 'ANOMALY DETECTED'))
+    grid_freq        = _normal_val(GRID_FREQUENCY_BASE, 0.005)
     return {
         'total_fleet_power_kw': round(total_power, 1),
-        'turbines_normal': turbines_normal,
-        'turbines_alarm': turbines_alarm,
-        'grid_frequency_hz': grid_freq
+        'turbines_normal':      turbines_normal,
+        'turbines_alarm':       turbines_alarm,
+        'grid_frequency_hz':    grid_freq
     }
 
+
 def generate_opcua_readings(inject_anomaly=False):
-    readings = []
-    timestamp = datetime.now().isoformat()
+    readings           = []
+    timestamp          = datetime.now().isoformat()
     anomaly_turbine_idx = random.randint(0, len(TURBINES) - 1) if inject_anomaly else None
+
     for i, turbine in enumerate(TURBINES):
         is_anomaly_turbine = (i == anomaly_turbine_idx)
-        gearbox_temp = _temp_val(55, 0.08)
+        gearbox_temp   = _temp_val(55, 0.08)
         generator_temp = _temp_val(62, 0.07)
         hydraulic_temp = _temp_val(44, 0.06)
-        power_kw = round(random.uniform(1200, 1800), 1)
-        wind_speed = round(random.uniform(7, 14), 2)
-        status = 'NORMAL'
-        anomaly_node = None
-        anomaly_score = 0.0
+        power_kw       = round(random.uniform(1200, 1800), 1)
+        wind_speed     = round(random.uniform(7, 14), 2)
+        status         = 'NORMAL'
+        anomaly_node   = None
+        anomaly_score  = 0.0
+
         if is_anomaly_turbine:
             anomaly_type = random.choice(['gearbox_temp', 'hydraulic_temp', 'generator_temp'])
             if anomaly_type == 'gearbox_temp':
@@ -320,33 +295,37 @@ def generate_opcua_readings(inject_anomaly=False):
                 anomaly_node = 'GearboxTemp'
             elif anomaly_type == 'hydraulic_temp':
                 hydraulic_temp = round(random.uniform(78, 90), 2)
-                anomaly_node = 'HydraulicTemp'
+                anomaly_node   = 'HydraulicTemp'
             else:
                 generator_temp = round(random.uniform(85, 98), 2)
-                anomaly_node = 'GeneratorTemp'
+                anomaly_node   = 'GeneratorTemp'
             anomaly_score = round(random.uniform(0.72, 0.95), 3)
-            status = 'ANOMALY DETECTED'
+            status        = 'ANOMALY DETECTED'
+
         is_alarm = (not is_anomaly_turbine) and (random.random() < 0.15)
         if is_alarm:
             power_kw = round(random.uniform(0, 200), 1)
-            status = 'ALARM'
+            status   = 'ALARM'
+
         readings.append({
-            'turbine_id': turbine['id'],
-            'turbine_label': turbine['label'],
-            'location': turbine['location'],
+            'turbine_id':     turbine['id'],
+            'turbine_label':  turbine['label'],
+            'location':       turbine['location'],
             'gearbox_temp_c': gearbox_temp,
             'generator_temp_c': generator_temp,
             'hydraulic_temp_c': hydraulic_temp,
-            'power_kw': power_kw,
-            'wind_speed_ms': wind_speed,
-            'status': status,
-            'anomaly_node': anomaly_node,
-            'anomaly_score': anomaly_score,
-            'is_anomaly': is_anomaly_turbine,
-            'alarm_active': is_alarm or is_anomaly_turbine,
-            'timestamp': timestamp
+            'power_kw':       power_kw,
+            'wind_speed_ms':  wind_speed,
+            'status':         status,
+            'anomaly_node':   anomaly_node,
+            'anomaly_score':  anomaly_score,
+            'is_anomaly':     is_anomaly_turbine,
+            'alarm_active':   is_alarm or is_anomaly_turbine,
+            'timestamp':      timestamp
         })
+
     return readings
+
 
 def should_inject_anomaly():
     return random.randint(1, 10) == 1
