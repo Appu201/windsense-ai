@@ -2559,7 +2559,7 @@ for _a in st.session_state.alarm_buffer:
     st.divider()
     col_r1, col_r2, col_r3 = st.columns([1, 2, 1])
     with col_r2:
-        if st.button("🔄 Refresh OPC UA Data", use_container_width=True, type="primary"):
+        if st.button("🔄 Refresh OPC UA Data", key="opcua_refresh_btn", use_container_width=True, type="primary"):
             st.rerun()
     st.caption("📌 In production, this feed would connect to the wind farm's OPC UA server via opcua-asyncio.")
 
